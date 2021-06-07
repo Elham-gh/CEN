@@ -222,7 +222,8 @@ def create_optimisers(lr_enc, lr_dec, mom_enc, mom_dec, wd_enc, wd_dec, param_en
         optim_dec = torch.optim.SGD(param_dec, lr=lr_dec, momentum=mom_dec, weight_decay=wd_dec)
     elif optim_dec == 'adam':
         optim_dec = torch.optim.Adam(param_dec, lr=lr_dec, weight_decay=wd_dec, eps=1e-3)
-
+    print(optim_dec.state_dict())
+    print(optim_enc.state_dict())
     return optim_enc, optim_dec
 
 
