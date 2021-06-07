@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 from PIL import Image
 from torch.utils.data import Dataset
+import os
 
 
 def line_to_paths_fn_nyudv2(x, input_names):
@@ -54,19 +55,27 @@ class SegDataset(Dataset):
     def __getitem__(self, idx):
         idxs = self.input_mask_idxs
         names = dict()
-        names['rgb'] = [os.path.join(self.root_dir, 'images', 'rgb_' + rpath + '.png') \
+        names['rgb'] = [os.path.join(self.root_dir, 'images', 'rgb_' + rpath[4:] + '.png') \
                     for rpath in self.datalist[idx]]
-        names['depth'] = [os.path.join(self.root_dir, 'depths', 'rgb_' + rpath + '.tif') \
+        names['depth'] = [os.path.join(self.root_dir, 'depths', 'rgb_' + rpath[4:] + '.tif') \
                     for rpath in self.datalist[idx]]
-        names['mask'] = [os.path.join(self.root_dir, 'GT', 'rgb_' + rpath + '.png') \
+        names['mask'] = [os.path.join(self.root_dir, 'GT', 'rgb_' + rpath[4:] + '.png') \
                     for rpath in self.datalist[idx]]
-        print(names)
-        hi
+        
+        # names = [os.path.join(self.root_dir, rpath) for rpath in self.datalist[idx]]
+        # print((0, names))
+        # print((1, name['rgb']))
+        # hi
         sample = {}
+        
         for i, key in enumerate(self.input_names):
-            sample[key] = self.read_image(names[idxs[i]], key)
+            # print(idxs[i], type(names[idxs[i]]))
+            sample[key] = self.read_image(names[key][idxs[i]], key)
+        # sample['rgb'] = self.read_image(names['rgb'], 'rgb')
+        # sample['depth'] = self.read_image(names['depth'], 'depth')
+
         try:
-            mask = np.array(Image.open(names[idxs[-1]]))
+            mask = np.array(Image.open(names['mask']))
         except FileNotFoundError:  # for sunrgbd
             path = names[idxs[-1]]
             num_idx = int(path[-10:-4]) + 5050
