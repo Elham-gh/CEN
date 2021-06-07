@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import cv2
 from PIL import Image
@@ -28,7 +27,7 @@ class SegDataset(Dataset):
             to be applied on a sample during the validation stage.
         stage (str): initial stage of dataset - either 'train' or 'val'.
     """
-    def __init__(self, dataset, data_file, data_dir, input_names, input_mask_idxs,
+    def __init__(self, dataset, data_file, data_dir, input_names, input_mask_idxs, input_dir,
                  transform_trn=None, transform_val=None, stage='train', ignore_label=None):
         with open(data_file, 'rb') as f:
             datalist = f.readlines()
@@ -40,6 +39,7 @@ class SegDataset(Dataset):
         self.input_names = input_names
         self.input_mask_idxs = input_mask_idxs
         self.ignore_label = ignore_label
+        self.input_dir = input_dir
 
     def set_stage(self, stage):
         """Define which set of transformation to use.
@@ -53,7 +53,15 @@ class SegDataset(Dataset):
 
     def __getitem__(self, idx):
         idxs = self.input_mask_idxs
-        names = [os.path.join(self.root_dir, rpath) for rpath in self.datalist[idx]]
+        names = dict()
+        names['rgb'] = [os.path.join(self.root_dir, 'images', 'rgb_' + rpath + '.png') \
+                    for rpath in self.datalist[idx]]
+        names['depth'] = [os.path.join(self.root_dir, 'depths', 'rgb_' + rpath + '.tif') \
+                    for rpath in self.datalist[idx]]
+        names['mask'] = [os.path.join(self.root_dir, 'GT', 'rgb_' + rpath + '.png') \
+                    for rpath in self.datalist[idx]]
+        print(names)
+        hi
         sample = {}
         for i, key in enumerate(self.input_names):
             sample[key] = self.read_image(names[idxs[i]], key)
@@ -82,7 +90,6 @@ class SegDataset(Dataset):
         if key == 'depth':
             img = cv2.applyColorMap(cv2.convertScaleAbs(255 - img, alpha=1), cv2.COLORMAP_JET)
         return img
-
     @staticmethod
     def read_image(x, key):
         """Simple image reader
