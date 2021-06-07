@@ -2,10 +2,10 @@ import numpy as np
 
 # DATASET PARAMETERS
 DATASET = 'nyudv2'
-TRAIN_DIR = '/data/nyud'  # 'Modify data path'
-VAL_DIR = TRAIN_DIR
-TRAIN_LIST = './data/nyudv2/train.txt'
-VAL_LIST = './data/nyudv2/val.txt'
+TRAIN_DIR = '/dataset/nyu/train'  # 'Modify data path'
+VAL_DIR = '/dataset/nyu/val'
+TRAIN_LIST = '/content/CEN/dataset/nyu/train/train.txt'
+VAL_LIST = '/content/CEN/dataset/nyu/val/val.txt'
 
 
 SHORTER_SIDE = 350
@@ -21,7 +21,7 @@ NUM_WORKERS = 16
 NUM_CLASSES = 40
 LOW_SCALE = 0.5
 HIGH_SCALE = 2.0
-IGNORE_LABEL = 255
+IGNORE_LABEL = 0
 
 # ENCODER PARAMETERS
 ENC = '101'  # ResNet101
