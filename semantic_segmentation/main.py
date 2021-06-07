@@ -235,6 +235,9 @@ def load_ckpt(ckpt_path, ckpt_dict):
     epoch_start = ckpt.get('epoch_start', 0)
     print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
         format(ckpt_path, best_val, epoch_start))
+    
+    opt_enc.load_state_dict(ckpt['opt_enc'])
+    opt_dec.load_state_dict(ckpt['opt_dec'])
     return best_val, epoch_start
 
 
