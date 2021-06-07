@@ -2,8 +2,8 @@ import numpy as np
 
 # DATASET PARAMETERS
 DATASET = 'nyudv2'
-TRAIN_DIR = '/dataset/nyu/train'  # 'Modify data path'
-VAL_DIR = '/dataset/nyu/val'
+TRAIN_DIR = '/content/CEN/dataset/nyu/train'  # 'Modify data path'
+VAL_DIR = '/content/CEN/dataset/nyu/val'
 TRAIN_LIST = '/content/CEN/dataset/nyu/train/train.txt'
 VAL_LIST = '/content/CEN/dataset/nyu/val/val.txt'
 
