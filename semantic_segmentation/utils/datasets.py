@@ -101,7 +101,6 @@ class SegDataset(Dataset):
             x (str): path to image.
         Returns image as `np.array`.
         """
-        print(x)
         img_arr = np.array(Image.open(x))
         if len(img_arr.shape) == 2:  # grayscale
             img_arr = np.tile(img_arr, [3, 1, 1]).transpose(1, 2, 0)
