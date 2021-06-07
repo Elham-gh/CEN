@@ -446,7 +446,8 @@ def main():
                   segm_crit, args.freeze_bn, slim_params, args.lamda, args.bn_threshold, args.print_loss)
             if (epoch + 1) % (args.val_every) == 0:
                 miou = validate(segmenter, args.input, val_loader, epoch_current, args.num_classes)
-                saver.save(miou, {'segmenter' : segmenter.state_dict(), 'epoch_start' : epoch_current})
+                saver.save(miou, {'segmenter' : segmenter.state_dict(), 'opt_enc': optim_enc.state_dict(), 
+                                  'opt_dec':optim_dec.state_dict, 'epoch_start' : epoch_current})
             epoch_current += 1
 
         print_log('Stage {} finished, time spent {:.3f}min\n'.format(task_idx, (time.time() - start) / 60.))
