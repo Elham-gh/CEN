@@ -61,19 +61,12 @@ class SegDataset(Dataset):
                     for rpath in self.datalist[idx]]
         names['mask'] = [os.path.join(self.root_dir, 'GT', 'rgb_' + rpath[4:] + '.png') \
                     for rpath in self.datalist[idx]]
-        
-        # names = [os.path.join(self.root_dir, rpath) for rpath in self.datalist[idx]]
-        # print((0, names))
-        # print((1, name['rgb']))
-        # hi
         sample = {}
-        
         for i, key in enumerate(self.input_names):
-            # print(idxs[i], type(names[idxs[i]]))
+            print(key)
+            print(i, idxs[i])
             sample[key] = self.read_image(names[key][idxs[i]], key)
-        # sample['rgb'] = self.read_image(names['rgb'], 'rgb')
-        # sample['depth'] = self.read_image(names['depth'], 'depth')
-
+        ji
         try:
             mask = np.array(Image.open(names['mask']))
         except FileNotFoundError:  # for sunrgbd
