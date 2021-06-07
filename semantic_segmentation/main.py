@@ -45,12 +45,12 @@ import utils.helpers as helpers
 from models.model import refinenet, model_init
 
 # Torch libraries
-    from torchvision import transforms
-    from torch.utils.data import DataLoader, random_split
-    # Custom libraries
-    from utils.datasets import SegDataset as Dataset
-    from utils.transforms import Normalise, Pad, RandomCrop, RandomMirror, ResizeAndScale, \
-                                 CropAlignToMask, ResizeAlignToMask, ToTensor, ResizeInputs
+from torchvision import transforms
+from torch.utils.data import DataLoader, random_split
+# Custom libraries
+from utils.datasets import SegDataset as Dataset
+from utils.transforms import Normalise, Pad, RandomCrop, RandomMirror, ResizeAndScale, \
+                             CropAlignToMask, ResizeAlignToMask, ToTensor, ResizeInputs
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
