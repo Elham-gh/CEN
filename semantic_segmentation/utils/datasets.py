@@ -70,7 +70,7 @@ class SegDataset(Dataset):
         for i, key in enumerate(self.input_names):
             sample[key] = self.read_image(names[idxs[i]], key)
         try:
-            mask = np.array(Image.open(names['mask']))
+            mask = np.array(Image.open(p['mask'][0]))
         except FileNotFoundError:  # for sunrgbd
             path = names[idxs[-1]]
             num_idx = int(path[-10:-4]) + 5050
@@ -101,6 +101,7 @@ class SegDataset(Dataset):
             x (str): path to image.
         Returns image as `np.array`.
         """
+        print(x)
         img_arr = np.array(Image.open(x))
         if len(img_arr.shape) == 2:  # grayscale
             img_arr = np.tile(img_arr, [3, 1, 1]).transpose(1, 2, 0)
