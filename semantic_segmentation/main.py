@@ -177,7 +177,7 @@ def create_loaders(dataset, inputs, train_dir, val_dir, train_list, val_list,
 
     """
     
-    input_names, input_mask_idxs, input_dirs = ['rgb', 'depth'], [0, 2, 1], ['images', 'depths', 'GT']
+    input_names, input_mask_idxs, input_dirs = ['rgb', 'depth'], [0, 1], ['images', 'depths', 'GT']
 
     AlignToMask = CropAlignToMask if dataset == 'nyudv2' else ResizeAlignToMask
     composed_trn = transforms.Compose([
