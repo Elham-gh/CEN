@@ -44,6 +44,13 @@ from utils import *
 import utils.helpers as helpers
 from models.model import refinenet, model_init
 
+# Torch libraries
+    from torchvision import transforms
+    from torch.utils.data import DataLoader, random_split
+    # Custom libraries
+    from utils.datasets import SegDataset as Dataset
+    from utils.transforms import Normalise, Pad, RandomCrop, RandomMirror, ResizeAndScale, \
+                                 CropAlignToMask, ResizeAlignToMask, ToTensor, ResizeInputs
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -169,15 +176,8 @@ def create_loaders(dataset, inputs, train_dir, val_dir, train_list, val_list,
       train_loader, val loader
 
     """
-    # Torch libraries
-    from torchvision import transforms
-    from torch.utils.data import DataLoader, random_split
-    # Custom libraries
-    from utils.datasets import SegDataset as Dataset
-    from utils.transforms import Normalise, Pad, RandomCrop, RandomMirror, ResizeAndScale, \
-                                 CropAlignToMask, ResizeAlignToMask, ToTensor, ResizeInputs
-
-    input_names, input_mask_idxs = ['rgb', 'depth'], [0, 2, 1]
+    
+    input_names, input_mask_idxs, input_dirs = ['rgb', 'depth'], [0, 2, 1], ['images', 'depths', 'GT']
 
     AlignToMask = CropAlignToMask if dataset == 'nyudv2' else ResizeAlignToMask
     composed_trn = transforms.Compose([
