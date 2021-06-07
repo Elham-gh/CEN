@@ -54,19 +54,21 @@ class SegDataset(Dataset):
 
     def __getitem__(self, idx):
         idxs = self.input_mask_idxs
-        names = dict()
-        names['rgb'] = [os.path.join(self.root_dir, 'images', 'rgb_' + rpath[4:] + '.png') \
+        
+        p = dict()
+        p['rgb'] = [os.path.join(self.root_dir, 'images', 'rgb_' + rpath[4:] + '.png') \
                     for rpath in self.datalist[idx]]
-        names['depth'] = [os.path.join(self.root_dir, 'depths', 'rgb_' + rpath[4:] + '.tif') \
+        p['depth'] = [os.path.join(self.root_dir, 'depths', 'rgb_' + rpath[4:] + '.tif') \
                     for rpath in self.datalist[idx]]
-        names['mask'] = [os.path.join(self.root_dir, 'GT', 'rgb_' + rpath[4:] + '.png') \
+        p['mask'] = [os.path.join(self.root_dir, 'GT', 'rgb_' + rpath[4:] + '.png') \
                     for rpath in self.datalist[idx]]
+        names = []
+        for i, j, k in zip(p['rgb'], p['depth'], p['mask']):
+            names += [i, j, k]
+
         sample = {}
         for i, key in enumerate(self.input_names):
-            print(key)
-            print(i, idxs[i])
-            sample[key] = self.read_image(names[key][idxs[i]], key)
-        ji
+            sample[key] = self.read_image(names[idxs[i]], key)
         try:
             mask = np.array(Image.open(names['mask']))
         except FileNotFoundError:  # for sunrgbd
