@@ -50,7 +50,7 @@ from torch.utils.data import DataLoader, random_split
 # Custom libraries
 from utils.datasets import SegDataset as Dataset
 from utils.transforms import Normalise, Pad, RandomCrop, RandomMirror, ResizeAndScale, \
-                             CropAlignToMask, ResizeAlignToMask, ToTensor, ResizeInputs
+                              CropAlignToMask, ResizeAlignToMask, ToTensor, ResizeInputs
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -199,13 +199,13 @@ def create_loaders(dataset, inputs, train_dir, val_dir, train_list, val_list,
     # Training and validation sets
     trainset = Dataset(dataset=dataset, data_file=train_list, data_dir=train_dir,
                        input_names=input_names, input_mask_idxs=input_mask_idxs,
-                       transform_trn=composed_trn, transform_val=composed_val,
-                       stage='train', ignore_label=ignore_label)
+                       input_dir=input_dirs, transform_trn=composed_trn, 
+                       transform_val=composed_val,stage='train', ignore_label=ignore_label)
 
     validset = Dataset(dataset=dataset, data_file=val_list, data_dir=val_dir,
                        input_names=input_names, input_mask_idxs=input_mask_idxs,
-                       transform_trn=None, transform_val=composed_val, stage='val',
-                       ignore_label=ignore_label)
+                       input_dir=input_dirs, transform_trn=None, transform_val=composed_val, 
+                       stage='val', ignore_label=ignore_label)
     print_log('Created train set {} examples, val set {} examples'.format(len(trainset), len(validset)))
     # Training and validation loaders
     train_loader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers,
