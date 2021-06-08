@@ -410,7 +410,7 @@ def main():
           .format(args.enc, args.enc_pretrained, compute_params(segmenter) / 1e6))
     
     # Restore if any
-    best_val, epoch_start = 0, 0
+    best_val, epoch_start, enc_opt, dec_opt = 0, 0, 0, 0
     if args.resume:
         if os.path.isfile(args.resume):
             best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter})
