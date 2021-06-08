@@ -296,7 +296,6 @@ def train(segmenter, input_types, train_loader, optim_enc, optim_dec, epoch,
     for slim_param in slim_params:
         slim_params_list.extend(slim_param.cpu().data.numpy())
     slim_params_list = np.array(sorted(slim_params_list))
-    print('lr-enc =', optim_enc.lr, 'lr-dec =', optim_dec.lr)
     print('Epoch %d, 3%% smallest slim_params: %.4f' % (epoch, \
         slim_params_list[len(slim_params_list) // 33]), flush=True)
     print('Epoch %d, portion of slim_params < %.e: %.4f' % (epoch, bn_threshold, \
@@ -368,7 +367,7 @@ def main():
     args = get_arguments()
     args.num_stages = len(args.lr_enc)
 
-    ckpt_dir = os.path.join('ckpt', args.ckpt)
+    ckpt_dir = os.path.join('/content/drive/MyDrive/SuperBPD/CEN/ckpt', args.ckpt)
     os.makedirs(ckpt_dir, exist_ok=True)
     os.system('cp -r *py models utils data %s' % ckpt_dir)
     helpers.logger = open(os.path.join(ckpt_dir, 'log.txt'), 'w+')
