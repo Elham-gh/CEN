@@ -237,9 +237,7 @@ def load_ckpt(ckpt_path, ckpt_dict):
     print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
         format(ckpt_path, best_val, epoch_start))
     
-    opt_enc.load_state_dict(ckpt['opt_enc'])
-    opt_dec.load_state_dict(ckpt['opt_dec'])
-    return best_val, epoch_start
+    return best_val, epoch_start, ckpt['opt_enc'], ckpt['opt_dec']
 
 
 def L1_penalty(var):
@@ -298,6 +296,7 @@ def train(segmenter, input_types, train_loader, optim_enc, optim_dec, epoch,
     for slim_param in slim_params:
         slim_params_list.extend(slim_param.cpu().data.numpy())
     slim_params_list = np.array(sorted(slim_params_list))
+    print('lr-enc =', optim_enc.lr, 'lr-dec =', optim_dec.lr)
     print('Epoch %d, 3%% smallest slim_params: %.4f' % (epoch, \
         slim_params_list[len(slim_params_list) // 33]), flush=True)
     print('Epoch %d, portion of slim_params < %.e: %.4f' % (epoch, bn_threshold, \
@@ -382,6 +381,7 @@ def main():
         torch.cuda.manual_seed_all(args.random_seed)
     np.random.seed(args.random_seed)
     random.seed(args.random_seed)
+    
     # Generate Segmenter
     torch.cuda.set_device(args.gpu[0])
     segmenter = create_segmenter(args.enc, args.num_classes, len(args.input),
@@ -413,7 +413,7 @@ def main():
     best_val, epoch_start = 0, 0
     if args.resume:
         if os.path.isfile(args.resume):
-            best_val, epoch_start = load_ckpt(args.resume, {'segmenter': segmenter})
+            best_val, epoch_start, enc_o, dec_o = load_ckpt(args.resume, {'segmenter': segmenter})
         else:
             print_log("=> no checkpoint found at '{}'".format(args.resume))
             return
@@ -448,6 +448,11 @@ def main():
             args.mom_enc, args.mom_dec,
             args.wd_enc, args.wd_dec,
             enc_params, dec_params, args.optim_dec)
+        
+        if args.resume:
+            optim_enc.load_state_dict(enc_o)
+            optim_dec.load_state_dict(dec_o)
+            args.resume = False
 
         for epoch in range(min(args.num_epoch[task_idx], total_epoch - epoch_start)):
             train(segmenter, args.input, train_loader, optim_enc, optim_dec, epoch_current,
