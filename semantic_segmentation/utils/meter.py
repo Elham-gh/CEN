@@ -52,7 +52,7 @@ class AverageMeter(object):
 
 class Saver():
     """Saver class for managing parameters"""
-    def __init__(self, args, ckpt_dir, enc_opt=enc_opt, dec_opt=dec_opt, best_val=0, condition=lambda x, y: x > y):
+    def __init__(self, args, ckpt_dir, enc_opt, dec_opt, best_val=0, condition=lambda x, y: x > y):
         """
         Args:
             args (dict): dictionary with arguments.
