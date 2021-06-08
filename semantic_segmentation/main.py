@@ -405,8 +405,10 @@ def main():
     if args.print_network:
         print_log('')
     segmenter = model_init(segmenter, args.enc, len(args.input), imagenet=args.enc_pretrained)
+    
     print_log('Loaded Segmenter {}, ImageNet-Pre-Trained={}, #PARAMS={:3.2f}M'
           .format(args.enc, args.enc_pretrained, compute_params(segmenter) / 1e6))
+    
     # Restore if any
     best_val, epoch_start = 0, 0
     if args.resume:
@@ -416,8 +418,10 @@ def main():
             print_log("=> no checkpoint found at '{}'".format(args.resume))
             return
     epoch_current = epoch_start
+    
     # Criterion
     segm_crit = nn.NLLLoss(ignore_index=args.ignore_label).cuda()
+    
     # Saver
     saver = Saver(args=vars(args), ckpt_dir=ckpt_dir, best_val=best_val,
                   condition=lambda x, y: x > y)  # keep checkpoint with the best validation score
