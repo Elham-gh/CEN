@@ -423,7 +423,7 @@ def main():
     segm_crit = nn.NLLLoss(ignore_index=args.ignore_label).cuda()
     
     # Saver
-    saver = Saver(args=vars(args), ckpt_dir=ckpt_dir, best_val=best_val,
+    saver = Saver(args=vars(args), ckpt_dir=ckpt_dir, enc_opt=enc_opt, dec_opt=dec_opt, best_val=best_val,
                   condition=lambda x, y: x > y)  # keep checkpoint with the best validation score
 
     for task_idx in range(args.num_stages):
