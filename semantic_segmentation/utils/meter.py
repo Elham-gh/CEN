@@ -81,12 +81,12 @@ class Saver():
     def save(self, new_val, dict_to_save):
         """Save new checkpoint"""
         self._counter += 1
+        dict_to_save['enc_opt'] = self.enc_opt
+        dict_to_save['dec_opt'] = self.dec_opt
         if self._do_save(new_val):
-            # print(' New best value {:.4f}, was {:.4f}'.format(new_val, self.best_val), flush=True)
+            print(' New best value {:.4f}, was {:.4f}'.format(new_val, self.best_val), flush=True)
             self.best_val = new_val
             dict_to_save['best_val'] = new_val
-            dict_to_save['enc_opt'] = self.enc_opt
-            dict_to_save['dec_opt'] = self.dec_opt
             torch.save(dict_to_save, '{}/model-best.pth'.format(self.ckpt_dir))
         else:
             dict_to_save['best_val'] = new_val
