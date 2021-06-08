@@ -52,7 +52,7 @@ class AverageMeter(object):
 
 class Saver():
     """Saver class for managing parameters"""
-    def __init__(self, args, ckpt_dir, best_val=0, condition=lambda x, y: x > y):
+    def __init__(self, args, ckpt_dir, enc_opt=enc_opt, dec_opt=dec_opt, best_val=0, condition=lambda x, y: x > y):
         """
         Args:
             args (dict): dictionary with arguments.
@@ -71,6 +71,8 @@ class Saver():
         self.best_val = best_val
         self.condition = condition
         self._counter = 0
+        self.enc_opt = enc_opt
+        self.dec_opt = dec_opt
 
     def _do_save(self, new_val):
         """Check whether need to save"""
@@ -83,6 +85,8 @@ class Saver():
             # print(' New best value {:.4f}, was {:.4f}'.format(new_val, self.best_val), flush=True)
             self.best_val = new_val
             dict_to_save['best_val'] = new_val
+            dict_to_save['enc_opt'] = self.enc_opt
+            dict_to_save['dec_opt'] = self.dec_opt
             torch.save(dict_to_save, '{}/model-best.pth'.format(self.ckpt_dir))
         else:
             dict_to_save['best_val'] = new_val
