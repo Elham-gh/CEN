@@ -450,7 +450,7 @@ def main():
         
         if args.resume:
             optim_enc.load_state_dict(enc_opt)
-            optim_dec.load_state_dict(dec_opt)
+            optim_dec.load_state_dict(dec_opt())
             args.resume = False
 
         for epoch in range(min(args.num_epoch[task_idx], total_epoch - epoch_start)):
