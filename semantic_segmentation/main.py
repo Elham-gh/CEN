@@ -412,7 +412,7 @@ def main():
     best_val, epoch_start, enc_opt, dec_opt = 0, 0, 0, 0
     if args.resume:
         if os.path.isfile(args.resume):
-            best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter})
+            best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter, 'opt_enc': opt_enc, 'opt_dec': opt_dec})
         else:
             print_log("=> no checkpoint found at '{}'".format(args.resume))
             return
