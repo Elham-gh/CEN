@@ -227,17 +227,33 @@ def create_optimisers(lr_enc, lr_dec, mom_enc, mom_dec, wd_enc, wd_dec, param_en
     return optim_enc, optim_dec
 
 
+# def load_ckpt(ckpt_path, ckpt_dict):
+#     ckpt = torch.load(ckpt_path, map_location='cpu')
+#     for (k, v) in ckpt_dict.items():
+#         if k in ckpt:
+#             v.load_state_dict(ckpt[k])
+#     best_val = ckpt.get('best_val', 0)
+#     epoch_start = ckpt.get('epoch_start', 0)
+#     print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
+#         format(ckpt_path, best_val, epoch_start))
+    
+#     return best_val, epoch_start, ckpt['opt_enc'], ckpt['opt_dec']
 def load_ckpt(ckpt_path, ckpt_dict):
     ckpt = torch.load(ckpt_path, map_location='cpu')
+    from collections import OrderedDict
+    new_state_dict = OrderedDict()
+
     for (k, v) in ckpt_dict.items():
         if k in ckpt:
-            v.load_state_dict(ckpt[k])
-    best_val = ckpt.get('best_val', 0)
-    epoch_start = ckpt.get('epoch_start', 0)
+            name = k[7:] # remove `module.`
+            new_state_dict[name] = v#.load_state_dict(ckpt[k])
+
+            # v.load_state_dict(ckpt[k])
+    best_val = new_state_dict.get('best_val', 0)
+    epoch_start = new_state_dict.get('epoch_start', 0)
     print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
         format(ckpt_path, best_val, epoch_start))
-    
-    return best_val, epoch_start, ckpt['opt_enc'], ckpt['opt_dec']
+    return best_val, epoch_start
 
 
 def L1_penalty(var):
@@ -412,7 +428,9 @@ def main():
     best_val, epoch_start, enc_opt, dec_opt = 0, 0, 0, 0
     if args.resume:
         if os.path.isfile(args.resume):
-            best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter, 'opt_enc': opt_enc, 'opt_dec': opt_dec})
+            # best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter})#, 'opt_enc': opt_enc, 'opt_dec': opt_dec})
+            best_val, epoch_start = load_ckpt(args.resume, {'segmenter': segmenter})
+
         else:
             print_log("=> no checkpoint found at '{}'".format(args.resume))
             return
