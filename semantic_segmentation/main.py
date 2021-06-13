@@ -346,18 +346,13 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
             gt_idx = gt < num_classes  # Ignore every class index larger than the number of classes
             # Compute outputs
             outputs, alpha_soft = segmenter(inputs)
-            #print('outputs', type(outputs[0]), type(outputs[1]))
-            #print(inputs[0].shape, inputs[1].shape)
-            #print(outputs[0].shape, outputs[1].shape)
-            #print(alpha_soft)
-            
             for idx, output in enumerate(outputs): # outputs=3*[1, 40, 107, 141], inputs=2*[1, 3, 427, 561]
                 output = cv2.resize(output[0, :num_classes].data.cpu().numpy().transpose(1, 2, 0), # [40, 107, 141]
                                     target.size()[1:][::-1], # [40, 427, 561]
                                     interpolation=cv2.INTER_CUBIC).argmax(axis=2).astype(np.uint8) # [427, 561]
                 # Compute IoU
                 conf_mat[idx] += confusion_matrix(gt[gt_idx], output[gt_idx], num_classes)
-                '''
+    
                 if i < save_image or save_image == -1:
                     img = make_validation_img(inputs[0].data.cpu().numpy(),
                                               inputs[1].data.cpu().numpy(),
@@ -366,8 +361,7 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
                     os.makedirs('imgs', exist_ok=True)
                     cv2.imwrite('imgs/validate_%d.png' % i, img[:,:,::-1])
                     print('imwrite at imgs/validate_%d.png' % i)
-                '''
-    for idx, input_type in enumerate(input_types + ['ens']): # ['rgb', 'depth', 'ens']
+        for idx, input_type in enumerate(input_types + ['ens']): # ['rgb', 'depth', 'ens']
         glob, mean, iou = getScores(conf_mat[idx]) # conf_mat[ens]=zeros
         best_iou_note = ''
         if iou > best_iou:
