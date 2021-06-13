@@ -229,7 +229,7 @@ def create_optimisers(lr_enc, lr_dec, mom_enc, mom_dec, wd_enc, wd_dec, param_en
 
 def load_ckpt(ckpt_path, ckpt_dict):
     ckpt = torch.load(ckpt_path, map_location='cpu')
-    for (k, v) in ckpt_dict['segmenter'].items():
+    for (k, v) in {'segmenter': ckpt_dict['segmenter']}.items():
         if k in ckpt:
             v.load_state_dict(ckpt[k])
     best_val = ckpt.get('best_val', 0)
