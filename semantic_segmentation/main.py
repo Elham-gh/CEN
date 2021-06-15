@@ -225,7 +225,7 @@ def create_optimisers(lr_enc, lr_dec, mom_enc, mom_dec, wd_enc, wd_dec, param_en
 
     return optim_enc, optim_dec
 
-
+'''
 def load_ckpt(ckpt_path, ckpt_dict):
     ckpt = torch.load(ckpt_path, map_location='cpu')
     for (k, v) in ckpt_dict.items():
@@ -236,7 +236,23 @@ def load_ckpt(ckpt_path, ckpt_dict):
     print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
         format(ckpt_path, best_val, epoch_start))
     return best_val, epoch_start
+'''
 
+def load_ckpt(ckpt_path, ckpt_dict):
+    ckpt = torch.load(ckpt_path, map_location='cpu')
+    print(ckpt.keys())
+    from collections import OrderedDict
+    new_state_dict = OrderedDict()
+    for (k, v) in ckpt_dict.items():
+        if k in ckpt:
+            name = k[7:] # remove `module.`
+            new_state_dict[name] = v#.load_state_dict(ckpt[k])
+            # v.load_state_dict(ckpt[k])
+    best_val = new_state_dict.get('best_val', 0)
+    epoch_start = new_state_dict.get('epoch_start', 0)
+    print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
+        format(ckpt_path, best_val, epoch_start))
+    return best_val, epoch_start
 
 def L1_penalty(var):
     return torch.abs(var).sum()
@@ -365,7 +381,7 @@ def main():
     args = get_arguments()
     args.num_stages = len(args.lr_enc)
 
-    ckpt_dir = os.path.join('ckpt', args.ckpt)
+    ckpt_dir = os.path.join('/content/drive/MyDrive/SuperBPD/CEN/ckpt', args.ckpt)
     os.makedirs(ckpt_dir, exist_ok=True)
     os.system('cp -r *py models utils data %s' % ckpt_dir)
     helpers.logger = open(os.path.join(ckpt_dir, 'log.txt'), 'w+')
@@ -404,20 +420,28 @@ def main():
     print_log('Loaded Segmenter {}, ImageNet-Pre-Trained={}, #PARAMS={:3.2f}M'
           .format(args.enc, args.enc_pretrained, compute_params(segmenter) / 1e6))
     # Restore if any
-    best_val, epoch_start = 0, 0
+    best_val, epoch_start, enc_opt, dec_opt = 0, 0, 0, 0
     if args.resume:
         if os.path.isfile(args.resume):
-            best_val, epoch_start = load_ckpt(args.resume, {'segmenter': segmenter})
+            optim_enc, optim_dec = create_optimisers(
+            args.lr_enc[0], args.lr_dec[0],
+            args.mom_enc, args.mom_dec,
+            args.wd_enc, args.wd_dec,
+            enc_params, dec_params, args.optim_dec)
+            best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter, 'opt_enc': optim_enc, 'opt_dec': optim_dec})
+            # best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter})
+
         else:
             print_log("=> no checkpoint found at '{}'".format(args.resume))
             return
     epoch_current = epoch_start
+
     # Criterion
     segm_crit = nn.NLLLoss(ignore_index=args.ignore_label).cuda()
     # Saver
-    saver = Saver(args=vars(args), ckpt_dir=ckpt_dir, best_val=best_val,
+    saver = Saver(args=vars(args), ckpt_dir=ckpt_dir, enc_opt=enc_opt, dec_opt=dec_opt, best_val=best_val,
                   condition=lambda x, y: x > y)  # keep checkpoint with the best validation score
-
+    
     for task_idx in range(args.num_stages):
         total_epoch = sum([args.num_epoch[idx] for idx in range(task_idx + 1)])
         if epoch_start >= total_epoch:
@@ -440,15 +464,21 @@ def main():
             args.mom_enc, args.mom_dec,
             args.wd_enc, args.wd_dec,
             enc_params, dec_params, args.optim_dec)
+        
+        if args.resume:
+            optim_enc.load_state_dict(enc_opt)
+            optim_dec.load_state_dict(dec_opt())
+            args.resume = False
 
         for epoch in range(min(args.num_epoch[task_idx], total_epoch - epoch_start)):
             train(segmenter, args.input, train_loader, optim_enc, optim_dec, epoch_current,
                   segm_crit, args.freeze_bn, slim_params, args.lamda, args.bn_threshold, args.print_loss)
             if (epoch + 1) % (args.val_every) == 0:
                 miou = validate(segmenter, args.input, val_loader, epoch_current, args.num_classes)
-                saver.save(miou, {'segmenter' : segmenter.state_dict(), 'epoch_start' : epoch_current})
+                saver.save(miou, {'segmenter' : segmenter.state_dict(), 'opt_enc': optim_enc.state_dict(), 
+                                  'opt_dec':optim_dec.state_dict, 'epoch_start' : epoch_current})
             epoch_current += 1
-
+            
         print_log('Stage {} finished, time spent {:.3f}min\n'.format(task_idx, (time.time() - start) / 60.))
 
     print_log('All stages are now finished. Best Val is {:.3f}'.format(saver.best_val))
