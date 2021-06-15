@@ -1,8 +1,8 @@
+import os
 import numpy as np
 import cv2
 from PIL import Image
 from torch.utils.data import Dataset
-import os
 
 
 def line_to_paths_fn_nyudv2(x, input_names):
@@ -13,8 +13,10 @@ line_to_paths_fn = {'nyudv2': line_to_paths_fn_nyudv2}
 
 class SegDataset(Dataset):
     """Multi-Modality Segmentation dataset.
+
     Works with any datasets that contain image
     and any number of 2D-annotations.
+
     Args:
         data_file (string): Path to the data file with annotations.
         data_dir (string): Directory with all the images.
@@ -27,8 +29,9 @@ class SegDataset(Dataset):
         transform_val (callable, optional): Optional transform
             to be applied on a sample during the validation stage.
         stage (str): initial stage of dataset - either 'train' or 'val'.
+
     """
-    def __init__(self, dataset, data_file, data_dir, input_names, input_mask_idxs, input_dir,
+    def __init__(self, dataset, data_file, data_dir, input_names, input_mask_idxs,
                  transform_trn=None, transform_val=None, stage='train', ignore_label=None):
         with open(data_file, 'rb') as f:
             datalist = f.readlines()
@@ -40,12 +43,13 @@ class SegDataset(Dataset):
         self.input_names = input_names
         self.input_mask_idxs = input_mask_idxs
         self.ignore_label = ignore_label
-        self.input_dir = input_dir
 
     def set_stage(self, stage):
         """Define which set of transformation to use.
+
         Args:
             stage (str): either 'train' or 'val'
+
         """
         self.stage = stage
 
@@ -54,23 +58,12 @@ class SegDataset(Dataset):
 
     def __getitem__(self, idx):
         idxs = self.input_mask_idxs
-        
-        p = dict()
-        p['rgb'] = [os.path.join(self.root_dir, 'images', 'rgb_' + rpath[4:] + '.png') \
-                    for rpath in self.datalist[idx]]
-        p['depth'] = [os.path.join(self.root_dir, 'depths', 'rgb_' + rpath[4:] + '.tif') \
-                    for rpath in self.datalist[idx]]
-        p['mask'] = [os.path.join(self.root_dir, 'GT', 'rgb_' + rpath[4:] + '.png') \
-                    for rpath in self.datalist[idx]]
-        names = []
-        for i, j, k in zip(p['rgb'], p['depth'], p['mask']):
-            names += [i, j, k]
-
+        names = [os.path.join(self.root_dir, rpath) for rpath in self.datalist[idx]]
         sample = {}
         for i, key in enumerate(self.input_names):
             sample[key] = self.read_image(names[idxs[i]], key)
         try:
-            mask = np.array(Image.open(p['mask'][0]))
+            mask = np.array(Image.open(names[idxs[-1]]))
         except FileNotFoundError:  # for sunrgbd
             path = names[idxs[-1]]
             num_idx = int(path[-10:-4]) + 5050
@@ -94,12 +87,16 @@ class SegDataset(Dataset):
         if key == 'depth':
             img = cv2.applyColorMap(cv2.convertScaleAbs(255 - img, alpha=1), cv2.COLORMAP_JET)
         return img
+
     @staticmethod
     def read_image(x, key):
         """Simple image reader
+
         Args:
             x (str): path to image.
+
         Returns image as `np.array`.
+
         """
         img_arr = np.array(Image.open(x))
         if len(img_arr.shape) == 2:  # grayscale
