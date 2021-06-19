@@ -96,7 +96,3 @@ class Saver():
             best = dict()
             best['best_val'] = new_val
             torch.save(best, '{}/best.pth.tar'.format(self.ckpt_dir))
-#         else:
-#             dict_to_save['best_val'] = new_val
-#             torch.save(dict_to_save, '{}/checkpoint.pth.tar'.format(self.ckpt_dir))
-
