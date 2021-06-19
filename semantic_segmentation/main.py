@@ -241,10 +241,6 @@ def load_ckpt(ckpt_path, ckpt_dict):
 def load_ckpt(ckpt_path, ckpt_dict, mode):
     PATH = ckpt_path + mode + '.pth.tar'
     ckpt = torch.load(PATH, map_location='cpu')
-    # if mode == 'model':
-    #     for (k, v) in ckpt_dict.items():
-    #         if k in ckpt:
-    #             v.load_state_dict(ckpt[k])
     if mode == 'numbers':
         return ckpt.get('epoch_start', 0)
     if mode == 'best':
@@ -422,12 +418,10 @@ def main():
         saved_model = args.resume + 'model.pth.tar'
         if os.path.isfile(saved_model):
             segmenter.load_state_dict(torch.load(saved_model, map_location='cpu'))
-            # for (k, v) in ckpt_dict.items():
-            #     if k in ckpt:
-            #         v.load_state_dict(ckpt[k])
-            # load_ckpt(args.resume, {'segmenter': segmenter}, mode='model')
             epoch_start = load_ckpt(args.resume, None, mode='numbers')            
-            best_val = load_ckpt(args.resume, None, mode='best')            
+            best_val = load_ckpt(args.resume, None, mode='best')   
+            print_log('Found checkpoint at {}'.format(saved_model))
+         
         else:
             print_log("=> no checkpoint found at '{}'".format(args.resume))
             return
