@@ -246,9 +246,9 @@ def load_ckpt(ckpt_path, ckpt_dict, mode):
             if k in ckpt:
                 v.load_state_dict(ckpt[k])
     if mode == 'numbers':
-        best_val = ckpt.get('best_val', 0)
-        epoch_start = ckpt.get('epoch_start', 0)
-        return best_val, epoch_start
+        return ckpt.get('epoch_start', 0)
+    if mode == 'best':
+        return best_val = ckpt.get('best_val', 0)
     if mode == 'opt':
         return ckpt['enc'], ckpt['dec']
 
@@ -422,7 +422,8 @@ def main():
     if args.resume:
         if os.path.isfile(args.resume):
             load_ckpt(args.resume, {'segmenter': segmenter}, mode='model')
-            best_val, epoch_start = load_ckpt(args.resume, None, mode='numbers')            
+            epoch_start = load_ckpt(args.resume, None, mode='numbers')            
+            best_val = load_ckpt(args.resume, None, mode='best')            
         else:
             print_log("=> no checkpoint found at '{}'".format(args.resume))
             return
@@ -468,8 +469,8 @@ def main():
                   segm_crit, args.freeze_bn, slim_params, args.lamda, args.bn_threshold, args.print_loss)
             if (epoch + 1) % (args.val_every) == 0:
                 miou = validate(segmenter, args.input, val_loader, epoch_current, args.num_classes)
-                saver.save(miou, {'segmenter' : segmenter.state_dict(), 'opt_enc': optim_enc.state_dict(), 
-                                  'opt_dec':optim_dec.state_dict, 'epoch_start' : epoch_current})
+                saver.save(miou, {'segmenter' : segmenter.state_dict(), 'epoch_start' : epoch_current}, {'epoch_start' : epoch_current},
+                                 {'opt_enc': optim_enc.state_dict(), 'opt_dec':optim_dec.state_dict})
             epoch_current += 1
             
         print_log('Stage {} finished, time spent {:.3f}min\n'.format(task_idx, (time.time() - start) / 60.))
