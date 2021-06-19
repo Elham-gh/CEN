@@ -84,8 +84,8 @@ class Saver():
         '''Save optimizer state'''
         torch.save(optimizers, '{}/opt.pth.tar'.format(self.ckpt_dir))
         '''save model state'''
-        torch.save(dict_to_save, '{}/model.pth.tar'.format(self.ckpt_dir))
-
+        model = dict_to_save['segmenter']
+        torch.save(model, '{}/model.pth.tar'.format(self.ckpt_dir))
         '''save epoch number'''
         torch.save(numbers, '{}/numbers.pth.tar'.format(self.ckpt_dir))
         
