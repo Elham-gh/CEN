@@ -241,10 +241,10 @@ def load_ckpt(ckpt_path, ckpt_dict):
 def load_ckpt(ckpt_path, ckpt_dict, mode):
     PATH = ckpt_path + mode + '.pth.tar'
     ckpt = torch.load(PATH, map_location='cpu')
-    if mode == 'model':
-        for (k, v) in ckpt_dict.items():
-            if k in ckpt:
-                v.load_state_dict(ckpt[k])
+    # if mode == 'model':
+    #     for (k, v) in ckpt_dict.items():
+    #         if k in ckpt:
+    #             v.load_state_dict(ckpt[k])
     if mode == 'numbers':
         return ckpt.get('epoch_start', 0)
     if mode == 'best':
@@ -419,8 +419,13 @@ def main():
     # Restore if any
     best_val, epoch_start = 0, 0
     if args.resume:
-        if os.path.isfile(args.resume + 'model.pth.tar'):
-            load_ckpt(args.resume, {'segmenter': segmenter}, mode='model')
+        saved_model = args.resume + 'model.pth.tar'
+        if os.path.isfile(saved_model):
+            segmenter.load_state_dict(torch.load(saved_model, map_location='cpu'))
+            # for (k, v) in ckpt_dict.items():
+            #     if k in ckpt:
+            #         v.load_state_dict(ckpt[k])
+            # load_ckpt(args.resume, {'segmenter': segmenter}, mode='model')
             epoch_start = load_ckpt(args.resume, None, mode='numbers')            
             best_val = load_ckpt(args.resume, None, mode='best')            
         else:
