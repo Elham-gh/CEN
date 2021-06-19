@@ -239,7 +239,7 @@ def load_ckpt(ckpt_path, ckpt_dict):
 '''
 
 def load_ckpt(ckpt_path, ckpt_dict, mode):
-    PATH = ckpt_path[:-8] + mode + '.pth.tar'
+    PATH = ckpt_path + mode + '.pth.tar'
     ckpt = torch.load(PATH, map_location='cpu')
     if mode == 'model':
         for (k, v) in ckpt_dict.items():
@@ -250,7 +250,7 @@ def load_ckpt(ckpt_path, ckpt_dict, mode):
     if mode == 'best':
         return ckpt.get('best_val', 0)
     if mode == 'opt':
-        return ckpt['enc'], ckpt['dec']
+        return ckpt['opt_enc'], ckpt['opt_dec']
 
 def L1_penalty(var):
     return torch.abs(var).sum()
@@ -268,7 +268,6 @@ def train(segmenter, input_types, train_loader, optim_enc, optim_dec, epoch,
       epoch (int) : current epoch
       segm_crit (nn.Loss) : segmentation criterion
       freeze_bn (bool) : whether to keep BN params intact
-
     """
     train_loader.dataset.set_stage('train')
     segmenter.train()
@@ -378,8 +377,8 @@ def main():
     best_iou = 0
     args = get_arguments()
     args.num_stages = len(args.lr_enc)
-
-    ckpt_dir = os.path.join('/content/drive/MyDrive/SuperBPD/CEN/ckpt', args.ckpt)
+    ckpt_dir = '/content/drive/MyDrive/SuperBPD/CEN/ckpt/exp_name/'
+    # ckpt_dir = os.path.join('/content/drive/MyDrive/SuperBPD/CEN/ckpt', args.ckpt)
     os.makedirs(ckpt_dir, exist_ok=True)
     os.system('cp -r *py models utils data %s' % ckpt_dir)
     helpers.logger = open(os.path.join(ckpt_dir, 'log.txt'), 'w+')
@@ -420,7 +419,7 @@ def main():
     # Restore if any
     best_val, epoch_start = 0, 0
     if args.resume:
-        if os.path.isfile(args.resume):
+        if os.path.isfile(args.resume + 'model.pth.tar'):
             load_ckpt(args.resume, {'segmenter': segmenter}, mode='model')
             epoch_start = load_ckpt(args.resume, None, mode='numbers')            
             best_val = load_ckpt(args.resume, None, mode='best')            
