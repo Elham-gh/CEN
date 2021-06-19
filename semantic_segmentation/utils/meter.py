@@ -71,20 +71,32 @@ class Saver():
         self.best_val = best_val
         self.condition = condition
         self._counter = 0
+        self.model_dir = 'model'
+        self.numbers_dir = 'numbers'
+        self.optimizer_dir = 'opt'
 
     def _do_save(self, new_val):
         """Check whether need to save"""
         return self.condition(new_val, self.best_val)
 
-    def save(self, new_val, dict_to_save):
+    def save(self, new_val, dict_to_save, numbers, optimizers):
         """Save new checkpoint"""
+        '''Save optimizer state'''
+        torch.save(optimizers, '{}/opt.pth.tar'.format(self.ckpt_dir))
+        '''save model state'''
+        torch.save(dict_to_save, '{}/model.pth.tar'.format(self.ckpt_dir))
+
+        '''save epoch number'''
+        torch.save(numbers, '{}/numbers.pth.tar'.format(self.ckpt_dir))
+        
         self._counter += 1
         if self._do_save(new_val):
             # print(' New best value {:.4f}, was {:.4f}'.format(new_val, self.best_val), flush=True)
             self.best_val = new_val
-            dict_to_save['best_val'] = new_val
-            torch.save(dict_to_save, '{}/model-best.pth.tar'.format(self.ckpt_dir))
-        else:
-            dict_to_save['best_val'] = new_val
-            torch.save(dict_to_save, '{}/checkpoint.pth.tar'.format(self.ckpt_dir))
+            best = dict()
+            best['best_val'] = new_val
+            torch.save(best, '{}/model-best.pth.tar'.format(self.ckpt_dir))
+#         else:
+#             dict_to_save['best_val'] = new_val
+#             torch.save(dict_to_save, '{}/checkpoint.pth.tar'.format(self.ckpt_dir))
 
