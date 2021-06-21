@@ -59,9 +59,11 @@ class SegDataset(Dataset):
     def __getitem__(self, idx):
         idxs = self.input_mask_idxs
         names = [os.path.join(self.root_dir, rpath) for rpath in self.datalist[idx]]
+        
         sample = {}
         for i, key in enumerate(self.input_names):
             sample[key] = self.read_image(names[idxs[i]], key)
+            sample['name'] = names[idxs[i]][-10:-4]
         try:
             mask = np.array(Image.open(names[idxs[-1]]))
         except FileNotFoundError:  # for sunrgbd
