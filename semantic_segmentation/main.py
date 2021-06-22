@@ -346,7 +346,7 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
             # Compute outputs
             outputs, alpha_soft = segmenter(inputs)
             
-            # saveflag = True
+            saveflag = True
             
             for idx, output in enumerate(outputs):
                 output = cv2.resize(output[0, :num_classes].data.cpu().numpy().transpose(1, 2, 0),
@@ -376,17 +376,17 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
 
                     # Compute IoU
                 conf_mat[idx] += confusion_matrix(gt[gt_idx], g[gt_idx], num_classes)
-                # if saveflag:
-                    # saveflag = False
-                if i < save_image or save_image == -1:
-                    img = make_validation_img(inputs[0].data.cpu().numpy(),
-                                              inputs[1].data.cpu().numpy(),
-                                              sample['mask'].data.cpu().numpy(),
-                                              g[np.newaxis,:])
-                    os.makedirs('Super_imgs_b', exist_ok=True)
-                    cv2.imwrite('Super_imgs_b/bvalidate_%d.png' % i, img[:,:,::-1])
-                    print('imwrite at Super_imgs_b/bvalidate_%d.png' % i)
-                # hi
+                if saveflag:
+                    saveflag = False
+                    if i < save_image or save_image == -1:
+                        img = make_validation_img(inputs[0].data.cpu().numpy(),
+                                                  inputs[1].data.cpu().numpy(),
+                                                  sample['mask'].data.cpu().numpy(),
+                                                  g[np.newaxis,:])
+                        os.makedirs('Super_imgs_b', exist_ok=True)
+                        cv2.imwrite('Super_imgs_b/bvalidate_%d.png' % i, img[:,:,::-1])
+                        print('imwrite at Super_imgs_b/bvalidate_%d.png' % i)
+                    # hi
 
     for idx, input_type in enumerate(input_types + ['ens']):
         glob, mean, iou = getScores(conf_mat[idx])
