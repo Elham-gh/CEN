@@ -325,7 +325,7 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
     global best_iou
     val_loader.dataset.set_stage('val')
     segmenter.eval()
-    bpds = pickle.load(open('/content/drive/MyDrive/datasets/nyu/CEN_bpds.pkl', 'rb'))
+    bpds = pickle.load(open('/content/drive/MyDrive/datasets/nyu/CEN_bpds_b.pkl', 'rb'))
 
     conf_mat = []
     for _ in range(len(input_types) + 1):
@@ -346,7 +346,7 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
             # Compute outputs
             outputs, alpha_soft = segmenter(inputs)
             
-            saveflag = True
+            # saveflag = True
             
             for idx, output in enumerate(outputs):
                 output = cv2.resize(output[0, :num_classes].data.cpu().numpy().transpose(1, 2, 0),
@@ -357,24 +357,36 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
 
                 for cluster in clusters:
                     mask = cluster == bpd ###* mask definition
+                    # check = gt * mask#***
+                    # omasked = output * mask
                     masked = g * mask ###* masking prediction            
                     l, c = np.unique(masked, return_counts=True) #*cluster indices
+                    # lgt, cgt = np.unique(check, return_counts=True)  #***
+                    # lo, co = np.unique(omasked, return_counts=True)  #***
                     cs = np.argsort(c)[::-1] #* finding majority vote
+                    # csgt = np.argsort(cgt)[::-1] #***
+                    # ocs = np.argsort(co)[::-1] #***
+                    # print('gt', lgt, cgt)
+                    # print('pr', l, c)
+                    # print('ou', lo, co)
+                    
                     mv = l[cs[0]] if l[cs[0]] != 255 else l[cs[1]]    
                     g[mask] = mv #* mask
+                    # print(mv)
 
                     # Compute IoU
-                    conf_mat[idx] += confusion_matrix(gt[gt_idx], g[gt_idx], num_classes)
-                    if saveflag:
-                        saveflag = False
-                        if i < save_image or save_image == -1:
-                            img = make_validation_img(inputs[0].data.cpu().numpy(),
-                                                      inputs[1].data.cpu().numpy(),
-                                                      sample['mask'].data.cpu().numpy(),
-                                                      g[np.newaxis,:])
-                            os.makedirs('Super_imgs', exist_ok=True)
-                            cv2.imwrite('Super_imgs/validate_%d.png' % i, img[:,:,::-1])
-                            print('imwrite at Super_imgs/validate_%d.png' % i)
+                conf_mat[idx] += confusion_matrix(gt[gt_idx], g[gt_idx], num_classes)
+                # if saveflag:
+                    # saveflag = False
+                if i < save_image or save_image == -1:
+                    img = make_validation_img(inputs[0].data.cpu().numpy(),
+                                              inputs[1].data.cpu().numpy(),
+                                              sample['mask'].data.cpu().numpy(),
+                                              g[np.newaxis,:])
+                    os.makedirs('Super_imgs_b', exist_ok=True)
+                    cv2.imwrite('Super_imgs_b/bvalidate_%d.png' % i, img[:,:,::-1])
+                    print('imwrite at Super_imgs_b/bvalidate_%d.png' % i)
+                # hi
 
     for idx, input_type in enumerate(input_types + ['ens']):
         glob, mean, iou = getScores(conf_mat[idx])
