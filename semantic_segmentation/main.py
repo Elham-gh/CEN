@@ -346,6 +346,7 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
             # Compute outputs
             outputs, alpha_soft = segmenter(inputs)
             
+            saveflag = True
             
             for idx, output in enumerate(outputs):
                 output = cv2.resize(output[0, :num_classes].data.cpu().numpy().transpose(1, 2, 0),
@@ -362,7 +363,6 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
                     mv = l[cs[0]] if l[cs[0]] != 255 else l[cs[1]]    
                     g[mask] = mv #* mask
 
-                    saveflag = True
                     # Compute IoU
                     conf_mat[idx] += confusion_matrix(gt[gt_idx], g[gt_idx], num_classes)
                     if saveflag:
