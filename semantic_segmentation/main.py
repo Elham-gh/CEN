@@ -362,16 +362,19 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
                     mv = l[cs[0]] if l[cs[0]] != 255 else l[cs[1]]    
                     g[mask] = mv #* mask
 
+                    saveflag = True
                     # Compute IoU
                     conf_mat[idx] += confusion_matrix(gt[gt_idx], g[gt_idx], num_classes)
-                    if i < save_image or save_image == -1:
-                        img = make_validation_img(inputs[0].data.cpu().numpy(),
-                                                  inputs[1].data.cpu().numpy(),
-                                                  sample['mask'].data.cpu().numpy(),
-                                                  g[np.newaxis,:])
-                        os.makedirs('Super_imgs', exist_ok=True)
-                        cv2.imwrite('Super_imgs/validate_%d.png' % i, img[:,:,::-1])
-                        print('imwrite at Super_imgs/validate_%d.png' % i)
+                    if saveflag:
+                        saveflag = False
+                        if i < save_image or save_image == -1:
+                            img = make_validation_img(inputs[0].data.cpu().numpy(),
+                                                      inputs[1].data.cpu().numpy(),
+                                                      sample['mask'].data.cpu().numpy(),
+                                                      g[np.newaxis,:])
+                            os.makedirs('Super_imgs', exist_ok=True)
+                            cv2.imwrite('Super_imgs/validate_%d.png' % i, img[:,:,::-1])
+                            print('imwrite at Super_imgs/validate_%d.png' % i)
 
     for idx, input_type in enumerate(input_types + ['ens']):
         glob, mean, iou = getScores(conf_mat[idx])
