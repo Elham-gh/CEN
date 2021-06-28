@@ -325,13 +325,14 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
     global best_iou
     val_loader.dataset.set_stage('val')
     segmenter.eval()
-    bpds = pickle.load(open('/content/drive/MyDrive/datasets/nyu/CEN_bpds_b.pkl', 'rb'))
-
+    bpds = pickle.load(open('/content/drive/MyDrive/datasets/nyu/CEN_bpds.pkl', 'rb'))
+    count = 0
     conf_mat = []
     for _ in range(len(input_types) + 1):
         conf_mat.append(np.zeros((num_classes, num_classes), dtype=int))
     with torch.no_grad():
         for i, sample in enumerate(val_loader):
+            count += 1
             # print('valid input:', sample['rgb'].shape, sample['depth'].shape, sample['mask'].shape)
             start = time.time()
             inputs = [sample[key].float().cuda() for key in input_types]
@@ -347,6 +348,7 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
             outputs, alpha_soft = segmenter(inputs)
             
             saveflag = True
+
             
             for idx, output in enumerate(outputs):
                 output = cv2.resize(output[0, :num_classes].data.cpu().numpy().transpose(1, 2, 0),
@@ -354,11 +356,12 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
                                     interpolation=cv2.INTER_CUBIC).argmax(axis=2).astype(np.uint8)
                 
                 g = output.copy()
+                g[np.where(output == 0)] = 40
 
                 for cluster in clusters:
                     mask = cluster == bpd ###* mask definition
                     # check = gt * mask#***
-                    # omasked = output * mask
+                    # omasked = g * mask
                     masked = g * mask ###* masking prediction            
                     l, c = np.unique(masked, return_counts=True) #*cluster indices
                     # lgt, cgt = np.unique(check, return_counts=True)  #***
@@ -366,27 +369,40 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
                     cs = np.argsort(c)[::-1] #* finding majority vote
                     # csgt = np.argsort(cgt)[::-1] #***
                     # ocs = np.argsort(co)[::-1] #***
+                    # print(len(np.where(masked)[0]))
                     # print('gt', lgt, cgt)
-                    # print('pr', l, c)
+                    # print('pr', cs, l, c)
                     # print('ou', lo, co)
-                    
-                    mv = l[cs[0]] if l[cs[0]] != 255 else l[cs[1]]    
-                    g[mask] = mv #* mask
-                    # print(mv)
 
-                    # Compute IoU
+                    ind = 0
+                    if len(cs) > 1 or l[cs[0]] in [0, 255]:
+                      ind += 1
+                      if len(cs) > 1:
+                        if l[cs[1]] in [0, 255]:
+                          ind += 1
+                    
+                    mv = l[cs[ind]]
+                    
+                    # if len()
+                    g[mask] = mv #* mask
+                    # print(l, c)
+                    # print(mv)
+                
+
+                # Compute IoU
+                g[np.where(g == 40)] = 0
                 conf_mat[idx] += confusion_matrix(gt[gt_idx], g[gt_idx], num_classes)
                 if saveflag:
                     saveflag = False
-                    if i < save_image or save_image == -1:
+                    if True:# i < save_image or save_image == -1:
                         img = make_validation_img(inputs[0].data.cpu().numpy(),
                                                   inputs[1].data.cpu().numpy(),
                                                   sample['mask'].data.cpu().numpy(),
                                                   g[np.newaxis,:])
-                        os.makedirs('Super_imgs_b', exist_ok=True)
-                        cv2.imwrite('Super_imgs_b/bvalidate_%d.png' % i, img[:,:,::-1])
-                        print('imwrite at Super_imgs_b/bvalidate_%d.png' % i)
-                    # hi
+                        os.makedirs('after', exist_ok=True)
+                        cv2.imwrite('after/a_%s.png' % sample['name'][0], img[:,:,::-1])
+                        print(str(count) + '. imwrite at after/a_%s.png' %sample['name'][0] )
+    # hi
 
     for idx, input_type in enumerate(input_types + ['ens']):
         glob, mean, iou = getScores(conf_mat[idx])
