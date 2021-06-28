@@ -375,16 +375,14 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
                     # print('ou', lo, co)
 
                     ind = 0
-                    if len(cs) > 1 or l[cs[0]] in [0, 255]:
-                      ind += 1
-                      if len(cs) > 1:
-                        if l[cs[1]] in [0, 255]:
-                          ind += 1
-                    
-                    mv = l[cs[ind]]
-                    
-                    # if len()
-                    g[mask] = mv #* mask
+                    if len(cs) >= 2:
+                        if l[cs[0]] in [0, 255] and l[cs[1]] in [0, 255]:
+                            ind += 2
+                        elif l[cs[0]] in [0, 255] or l[cs[1]] in [0, 255]:
+                            ind += 1
+                        mv = l[cs[ind]]
+                        # if len > 2
+                        g[mask] = mv #* mask
                     # print(l, c)
                     # print(mv)
                 
