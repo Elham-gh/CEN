@@ -16,8 +16,8 @@ RESIZE_SIZE = None
 NORMALISE_PARAMS = [1./255,  # Image SCALE
                     np.array([0.485, 0.456, 0.406]).reshape((1, 1, 3)),  # Image MEAN
                     np.array([0.229, 0.224, 0.225]).reshape((1, 1, 3)),  # Image STD
-                    1./5000,   # Depth SCALE
-                    1./292500] #BPD SCALE  
+                    1./5000]#,   # Depth SCALE
+                    # 1./292500] #BPD SCALE  
 BATCH_SIZE = 4
 NUM_WORKERS = 16
 NUM_CLASSES = 40
