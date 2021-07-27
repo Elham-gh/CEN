@@ -99,9 +99,7 @@ class RandomCrop(object):
         top = np.random.randint(0, h - new_h + 1)
         left = np.random.randint(0, w - new_w + 1)
         for key in sample['inputs']:
-            print(key)
             sample[key] = self.transform_input(sample[key], top, new_h, left, new_w)        
-            print(sample[key].shape)
         sample['mask'] = sample['mask'][top : top + new_h, left : left + new_w]
         return sample
 
@@ -208,8 +206,6 @@ class ResizeInputs(object):
         for key in sample['inputs']:
             inter = inters[key] if key in inters else cv2.INTER_CUBIC
             sample[key] = self.transform_input(sample[key], scale, inter)
-            print(key, sample[key].shape)
-        print('resizeinput is green')
         return sample
 
     def transform_input(self, input, scale, inter):
@@ -228,7 +224,6 @@ class ResizeInputsScale(object):
         for key in sample['inputs']:
             inter = inters[key] if key in inters else cv2.INTER_CUBIC
             sample[key] = self.transform_input(sample[key], self.scale, inter)
-        print('resizeinputsacle is green')
         return sample
 
     def transform_input(self, input, scale, inter):
@@ -269,7 +264,7 @@ class Normalise(object):
 
     def __call__(self, sample):
         for key in sample['inputs']:
-            if key == 'depth':
+            if key == 'depth' or key == 'bpd':
                 continue
             sample[key] = (self.scale * sample[key] - self.mean) / self.std
         if 'depth' in sample:
@@ -283,6 +278,9 @@ class Normalise(object):
             elif self.depth_scale == -2:  # sunrgbd
                 depth = sample['depth']
                 sample['depth'] = (depth - depth.min()) * 255.0 / (depth.max() - depth.min())
+        if 'bpd' in sample:
+            sample['bpd'] = (sample['bpd'] - sample['bpd'].min()) / (sample['bpd'].max() - sample['bpd'].min())
+      
         return sample
 
 
