@@ -58,6 +58,8 @@ def get_arguments():
                         help='Path to the training set directory.')
     parser.add_argument('--val-dir', type=str, default=VAL_DIR,
                         help='Path to the validation set directory.')
+    parser.add_argument('--bpd-dir', type=str, default=BPD_DIR,
+                        help='Path to the BPD pickl directory.')
     parser.add_argument('--train-list', type=str, default=TRAIN_LIST,
                         help='Path to the training set list.')
     parser.add_argument('--val-list', type=str, default=VAL_LIST,
@@ -147,7 +149,7 @@ def create_segmenter(num_layers, num_classes, num_parallel, bn_threshold, gpu):
     return segmenter
 
 
-def create_loaders(dataset, inputs, train_dir, val_dir, train_list, val_list,
+def create_loaders(dataset, inputs, train_dir, val_dir, bpd_dir, train_list, val_list,
                    shorter_side, crop_size, input_size, low_scale, high_scale,
                    normalise_params, batch_size, num_workers, ignore_label):
     """
@@ -177,7 +179,7 @@ def create_loaders(dataset, inputs, train_dir, val_dir, train_list, val_list,
     from utils.transforms import Normalise, Pad, RandomCrop, RandomMirror, ResizeAndScale, \
                                  CropAlignToMask, ResizeAlignToMask, ToTensor, ResizeInputs
 
-    input_names, input_mask_idxs = ['rgb', 'depth'], [0, 2, 1]
+    input_names, input_mask_idxs = ['rgb', 'depth', 'bpd'], [0, 3, 1, 2]
 
     AlignToMask = CropAlignToMask if dataset == 'nyudv2' else ResizeAlignToMask
     composed_trn = transforms.Compose([
@@ -198,11 +200,13 @@ def create_loaders(dataset, inputs, train_dir, val_dir, train_list, val_list,
     ])
     # Training and validation sets
     trainset = Dataset(dataset=dataset, data_file=train_list, data_dir=train_dir,
+                       bpd_dir=bpd_dir,
                        input_names=input_names, input_mask_idxs=input_mask_idxs,
                        transform_trn=composed_trn, transform_val=composed_val,
                        stage='train', ignore_label=ignore_label)
 
     validset = Dataset(dataset=dataset, data_file=val_list, data_dir=val_dir,
+                       bpd_dir=bpd_dir,
                        input_names=input_names, input_mask_idxs=input_mask_idxs,
                        transform_trn=None, transform_val=composed_val, stage='val',
                        ignore_label=ignore_label)
@@ -285,6 +289,8 @@ def train(segmenter, input_types, train_loader, optim_enc, optim_dec, epoch,
         # print('train input:', sample['rgb'].shape, sample['depth'].shape, sample['mask'].shape)
         start = time.time()
         inputs = [sample[key].cuda().float() for key in input_types]
+        print(inputs)
+        aaf
         target = sample['mask'].cuda().long()
         # Compute outputs
         outputs, _ = segmenter(inputs)
@@ -450,7 +456,7 @@ def main():
         torch.cuda.empty_cache()
         # Create dataloaders
         train_loader, val_loader = create_loaders(
-            DATASET, args.input, args.train_dir, args.val_dir, args.train_list, args.val_list,
+            DATASET, args.input, args.train_dir, args.val_dir, args.bpd_dir, args.train_list, args.val_list,
             args.shorter_side, args.crop_size, args.input_size, args.low_scale, args.high_scale,
             args.normalise_params, args.batch_size, args.num_workers, args.ignore_label)
         if args.evaluate:
