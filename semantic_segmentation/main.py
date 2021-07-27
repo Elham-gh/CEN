@@ -115,7 +115,7 @@ def get_arguments():
                         help='Whether print losses during training.')
     parser.add_argument('--save-image', type=int, default=100,
                         help='Number to save images during evaluating, -1 to save all.')
-    parser.add_argument('-i', '--input', default=['rgb', 'depth'], type=str, nargs='+', 
+    parser.add_argument('-i', '--input', default=['rgb', 'depth', 'bpd'], type=str, nargs='+', 
                         help='input type (image, depth)')
 
     # Optimisers
@@ -289,8 +289,6 @@ def train(segmenter, input_types, train_loader, optim_enc, optim_dec, epoch,
         # print('train input:', sample['rgb'].shape, sample['depth'].shape, sample['mask'].shape)
         start = time.time()
         inputs = [sample[key].cuda().float() for key in input_types]
-        print(inputs)
-        aaf
         target = sample['mask'].cuda().long()
         # Compute outputs
         outputs, _ = segmenter(inputs)
