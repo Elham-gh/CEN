@@ -36,6 +36,7 @@ import torch
 KEYS_TO_DTYPES = {
     'rgb': torch.float,
     'depth': torch.float,
+    'bpd': torch.float,
     'normals': torch.float,
     'mask': torch.long,
 }
@@ -54,6 +55,7 @@ class Pad(object):
         assert isinstance(size, int)
         self.size = size
         self.img_val = img_val
+        self.bpd_val = [0] * 3
         self.msk_val = msk_val
 
     def __call__(self, sample):
@@ -64,6 +66,7 @@ class Pad(object):
         pad = ((h_pad, h_pad), (w_pad, w_pad))
         for key in sample['inputs']:
             sample[key] = self.transform_input(sample[key], pad)
+        # sample['bpd'] = np.pad(sample['bpd'], pad, mode='constant', constant_values=self.bpd_val)        
         sample['mask'] = np.pad(sample['mask'], pad, mode='constant', constant_values=self.msk_val)
         return sample 
 
@@ -96,11 +99,14 @@ class RandomCrop(object):
         top = np.random.randint(0, h - new_h + 1)
         left = np.random.randint(0, w - new_w + 1)
         for key in sample['inputs']:
-            sample[key] = self.transform_input(sample[key], top, new_h, left, new_w)
+            print(key)
+            sample[key] = self.transform_input(sample[key], top, new_h, left, new_w)        
+            print(sample[key].shape)
         sample['mask'] = sample['mask'][top : top + new_h, left : left + new_w]
         return sample
 
     def transform_input(self, input, top, new_h, left, new_w):
+        
         input = input[top : top + new_h, left : left + new_w]
         return input
 
@@ -135,7 +141,7 @@ class ResizeAndScale(object):
             max_side = max(image.shape[:2])
             if max_side * scale > self.side:
                 scale = (self.side * 1. / max_side)
-        inters = {'rgb': cv2.INTER_CUBIC, 'depth': cv2.INTER_NEAREST}
+        inters = {'rgb': cv2.INTER_CUBIC, 'depth': cv2.INTER_NEAREST, 'bpd': cv2.INTER_NEAREST}
         for key in sample['inputs']:
             inter = inters[key] if key in inters else cv2.INTER_CUBIC
             sample[key] = self.transform_input(sample[key], scale, inter)
@@ -176,6 +182,7 @@ class ResizeAlignToMask(object):
         for key in sample['inputs']:
             inter = inters[key] if key in inters else cv2.INTER_CUBIC
             sample[key] = self.transform_input(sample[key], mask_h, inter)
+        print('IT IS NOT NYU')
         return sample
 
     def transform_input(self, input, mask_h, inter):
@@ -197,10 +204,12 @@ class ResizeInputs(object):
         size = sample['rgb'].shape[0]
         scale = self.size / size
         # print(sample['rgb'].shape, type(sample['rgb']))
-        inters = {'rgb': cv2.INTER_CUBIC, 'depth': cv2.INTER_NEAREST}
+        inters = {'rgb': cv2.INTER_CUBIC, 'depth': cv2.INTER_NEAREST, 'bpd': cv2.INTER_NEAREST}
         for key in sample['inputs']:
             inter = inters[key] if key in inters else cv2.INTER_CUBIC
             sample[key] = self.transform_input(sample[key], scale, inter)
+            print(key, sample[key].shape)
+        print('resizeinput is green')
         return sample
 
     def transform_input(self, input, scale, inter):
@@ -215,10 +224,11 @@ class ResizeInputsScale(object):
     def __call__(self, sample):
         if self.scale is None:
             return sample
-        inters = {'rgb': cv2.INTER_CUBIC, 'depth': cv2.INTER_NEAREST}
+        inters = {'rgb': cv2.INTER_CUBIC, 'depth': cv2.INTER_NEAREST, 'bpd': cv2.INTER_NEAREST}
         for key in sample['inputs']:
             inter = inters[key] if key in inters else cv2.INTER_CUBIC
             sample[key] = self.transform_input(sample[key], self.scale, inter)
+        print('resizeinputsacle is green')
         return sample
 
     def transform_input(self, input, scale, inter):
