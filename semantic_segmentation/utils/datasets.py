@@ -60,12 +60,6 @@ class SegDataset(Dataset):
 
     def __getitem__(self, idx):
         
-        # @staticmethod
-        # def read_image_(x, key):
-        #     print('',key)
-        #     return img
-
-        # @staticmethod
         def read_image(x, key):
             """Simple image reader
 
@@ -92,13 +86,10 @@ class SegDataset(Dataset):
         dpt_name = os.path.join(self.root_dir, 'depth', self.datalist[idx])
         bpd_name = self.datalist[idx][:6]
         
-        # sample = {}
-        # for i, key in enumerate(self.input_names):
-        #     sample[key] = self.read_image(names[idxs[i]], key)
         sample = {}
         sample['rgb'] = read_image(img_name, 'rgb')
         sample['mask'] = np.array(Image.open(msk_name))
-        sample['depth'] = read_image(dpt_name, 'depth')#[12:, 15:]
+        sample['depth'] = read_image(dpt_name, 'depth')
         sample['bpd'] = np.tile(self.bpds[bpd_name], (3, 1, 1)).transpose(1, 2, 0)
         # print(102, sample['bpd'].shape)  
         # print(sample['depth'].shape)    
@@ -115,22 +106,4 @@ class SegDataset(Dataset):
         del sample['inputs']
         
         return sample 
-        '''
-        def read_image(x):
-            img_arr = np.array(Image.open(x))
-            if len(img_arr.shape) == 2:  # grayscale
-                img_arr = np.tile(img_arr, [3, 1, 1]).transpose(1, 2, 0)
-            return img_arr
-
-        
-        if img_name != msk_name:
-            assert len(mask.shape) == 2, "Masks must be encoded without colourmap"
-        sample = {"image": image, "mask": mask, "name": bpd_name, "bpd": bpd, "depth": depth}
-        if self.stage == "train":
-            if self.transform_trn:
-                sample = self.transform_trn(sample)
-        elif self.stage == "val":
-            if self.transform_val:
-                sample = self.transform_val(sample)
-        return sample'''
     
