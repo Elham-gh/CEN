@@ -115,7 +115,7 @@ def get_arguments():
                         help='Whether print losses during training.')
     parser.add_argument('--save-image', type=int, default=100,
                         help='Number to save images during evaluating, -1 to save all.')
-    parser.add_argument('-i', '--input', default=['rgb', 'depth', 'bpd'], type=str, nargs='+', 
+    parser.add_argument('-i', '--input', default=['rgb', 'bpd'], type=str, nargs='+', 
                         help='input type (image, depth)')
 
     # Optimisers
@@ -242,21 +242,23 @@ def load_ckpt(ckpt_path, ckpt_dict):
     return best_val, epoch_start
 '''
 
-def load_ckpt(ckpt_path, ckpt_dict):
-    ckpt = torch.load(ckpt_path, map_location='cpu')
-    print(ckpt.keys())
-    from collections import OrderedDict
-    new_state_dict = OrderedDict()
-    for (k, v) in ckpt_dict.items():
-        if k in ckpt:
-            name = k[7:] # remove `module.`
-            new_state_dict[name] = v#.load_state_dict(ckpt[k])
-            # v.load_state_dict(ckpt[k])
-    best_val = new_state_dict.get('best_val', 0)
-    epoch_start = new_state_dict.get('epoch_start', 0)
-    print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
-        format(ckpt_path, best_val, epoch_start))
-    return best_val, epoch_start
+# def load_ckpt(ckpt_path, ckpt_dict):
+#     ckpt = torch.load(ckpt_path, map_location='cpu')
+#     print(ckpt.keys())
+#     from collections import OrderedDict
+#     new_state_dict = OrderedDict()
+#     for (k, v) in ckpt_dict.items():
+#         if k in ckpt:
+#             name = k[7:] # remove `module.`
+#             new_state_dict[name] = v#.load_state_dict(ckpt[k])
+#             # v.load_state_dict(ckpt[k])
+#     best_val = new_state_dict.get('best_val', 0)
+#     epoch_start = new_state_dict.get('epoch_start', 0)
+#     print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
+#         format(ckpt_path, best_val, epoch_start))
+#     return best_val, epoch_start
+
+
 
 def L1_penalty(var):
     return torch.abs(var).sum()
@@ -424,20 +426,37 @@ def main():
     print_log('Loaded Segmenter {}, ImageNet-Pre-Trained={}, #PARAMS={:3.2f}M'
           .format(args.enc, args.enc_pretrained, compute_params(segmenter) / 1e6))
     # Restore if any
-    best_val, epoch_start, enc_opt, dec_opt = 0, 0, 0, 0
-    if args.resume:
-        if os.path.isfile(args.resume):
-            optim_enc, optim_dec = create_optimisers(
-            args.lr_enc[0], args.lr_dec[0],
-            args.mom_enc, args.mom_dec,
-            args.wd_enc, args.wd_dec,
-            enc_params, dec_params, args.optim_dec)
-            best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter, 'opt_enc': optim_enc, 'opt_dec': optim_dec})
-            # best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter})
+    args.resume = ckpt_dir 
+    # best_val, epoch_start, enc_opt, dec_opt = 0, 0, 0, 0
+    # if args.resume:
+    #     if os.path.isfile(args.resume):
+    #         optim_enc, optim_dec = create_optimisers(
+    #         args.lr_enc[0], args.lr_dec[0],
+    #         args.mom_enc, args.mom_dec,
+    #         args.wd_enc, args.wd_dec,
+    #         enc_params, dec_params, args.optim_dec)
+    #         best_val, epoch_start = load_ckpt(args.resume, 
+    #             {'segmenter': segmenter, 'opt_enc': optim_enc, 'opt_dec': optim_dec})
+    #         # best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter})
 
+    #     else:
+    #         print_log("=> no checkpoint found at '{}'".format(args.resume))
+    #         return
+    best_val, epoch_start = 0, 0
+    if args.resume:
+        saved_model = args.resume + '/checkpoint.pth.tar'
+        if os.path.isfile(saved_model):
+            segmenter.load_state_dict(torch.load(saved_model, map_location='cpu')['segmenter'])
+            print('Saved Segmenter Is Loaded')
+            get_ckpt = torch.load(saved_model, map_location='cpu')
+            best_val = get_ckpt.get('best_val', 0)
+            enc_opt = get_ckpt.get('enc_opt', 0)
+            dec_opt = get_ckpt.get('dec_opt', 0)
+            print('Found checkpoint at {}'.format(saved_model))
         else:
-            print_log("=> no checkpoint found at '{}'".format(args.resume))
+            print("=> no checkpoint found at '{}'".format(args.resume))
             return
+
     epoch_current = epoch_start
 
     # Criterion
@@ -446,7 +465,7 @@ def main():
     saver = Saver(args=vars(args), ckpt_dir=ckpt_dir, enc_opt=enc_opt, dec_opt=dec_opt, best_val=best_val,
                   condition=lambda x, y: x > y)  # keep checkpoint with the best validation score
     
-    for task_idx in range(args.num_stages):
+    for task_idx in range(1, args.num_stages):
         total_epoch = sum([args.num_epoch[idx] for idx in range(task_idx + 1)])
         if epoch_start >= total_epoch:
             continue
@@ -469,10 +488,10 @@ def main():
             args.wd_enc, args.wd_dec,
             enc_params, dec_params, args.optim_dec)
         
-        if args.resume:
-            optim_enc.load_state_dict(enc_opt)
-            optim_dec.load_state_dict(dec_opt())
-            args.resume = False
+        # if args.resume:
+        #     optim_enc.load_state_dict(enc_opt)
+        #     optim_dec.load_state_dict(dec_opt())
+        #     args.resume = False
 
         for epoch in range(min(args.num_epoch[task_idx], total_epoch - epoch_start)):
             train(segmenter, args.input, train_loader, optim_enc, optim_dec, epoch_current,
