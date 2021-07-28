@@ -426,32 +426,20 @@ def main():
     print_log('Loaded Segmenter {}, ImageNet-Pre-Trained={}, #PARAMS={:3.2f}M'
           .format(args.enc, args.enc_pretrained, compute_params(segmenter) / 1e6))
     # Restore if any
-    args.resume = ckpt_dir 
-    # best_val, epoch_start, enc_opt, dec_opt = 0, 0, 0, 0
-    # if args.resume:
-    #     if os.path.isfile(args.resume):
-    #         optim_enc, optim_dec = create_optimisers(
-    #         args.lr_enc[0], args.lr_dec[0],
-    #         args.mom_enc, args.mom_dec,
-    #         args.wd_enc, args.wd_dec,
-    #         enc_params, dec_params, args.optim_dec)
-    #         best_val, epoch_start = load_ckpt(args.resume, 
-    #             {'segmenter': segmenter, 'opt_enc': optim_enc, 'opt_dec': optim_dec})
-    #         # best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter})
-
-    #     else:
-    #         print_log("=> no checkpoint found at '{}'".format(args.resume))
-    #         return
+    args.resume = '' #ckpt_dir 
     best_val, epoch_start = 0, 0
+    enc_opt = dec_opt = None
+
     if args.resume:
-        saved_model = args.resume + '/checkpoint.pth.tar'
+        saved_model = args.resume + '/model.pth.tar'
         if os.path.isfile(saved_model):
             segmenter.load_state_dict(torch.load(saved_model, map_location='cpu')['segmenter'])
             print('Saved Segmenter Is Loaded')
+            
             get_ckpt = torch.load(saved_model, map_location='cpu')
-            best_val = get_ckpt.get('best_val', 0)
-            enc_opt = get_ckpt.get('enc_opt', 0)
-            dec_opt = get_ckpt.get('dec_opt', 0)
+            best_val = torch.load(args.resume + '/best' + '.pth.tar')['best_val']#.get('best_val', 0)
+            enc_opt = torch.load(args.resume + '/opt' + '.pth.tar')['opt_enc']
+            dec_opt = torch.load(args.resume + '/opt' + '.pth.tar')['opt_dec']
             print('Found checkpoint at {}'.format(saved_model))
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
@@ -496,10 +484,11 @@ def main():
         for epoch in range(min(args.num_epoch[task_idx], total_epoch - epoch_start)):
             train(segmenter, args.input, train_loader, optim_enc, optim_dec, epoch_current,
                   segm_crit, args.freeze_bn, slim_params, args.lamda, args.bn_threshold, args.print_loss)
-            if (epoch + 1) % (args.val_every) == 0:
-                miou = validate(segmenter, args.input, val_loader, epoch_current, args.num_classes)
-                saver.save(miou, {'segmenter' : segmenter.state_dict(), 'opt_enc': optim_enc.state_dict(), 
-                                  'opt_dec':optim_dec.state_dict, 'epoch_start' : epoch_current})
+            # if (epoch + 1) % (args.val_every) == 0:
+            miou = validate(segmenter, args.input, val_loader, epoch_current, args.num_classes)
+            saver.save(miou, {'segmenter' : segmenter.state_dict()}, 
+                                  {'opt_enc': optim_enc.state_dict(), 'opt_dec':optim_dec.state_dict}, 
+                                  {'epoch_start' : epoch_current})
             epoch_current += 1
             
         print_log('Stage {} finished, time spent {:.3f}min\n'.format(task_idx, (time.time() - start) / 60.))
