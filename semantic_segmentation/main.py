@@ -229,37 +229,7 @@ def create_optimisers(lr_enc, lr_dec, mom_enc, mom_dec, wd_enc, wd_dec, param_en
 
     return optim_enc, optim_dec
 
-'''
-def load_ckpt(ckpt_path, ckpt_dict):
-    ckpt = torch.load(ckpt_path, map_location='cpu')
-    for (k, v) in ckpt_dict.items():
-        if k in ckpt:
-            v.load_state_dict(ckpt[k])
-    best_val = ckpt.get('best_val', 0)
-    epoch_start = ckpt.get('epoch_start', 0)
-    print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
-        format(ckpt_path, best_val, epoch_start))
-    return best_val, epoch_start
-'''
-
-# def load_ckpt(ckpt_path, ckpt_dict):
-#     ckpt = torch.load(ckpt_path, map_location='cpu')
-#     print(ckpt.keys())
-#     from collections import OrderedDict
-#     new_state_dict = OrderedDict()
-#     for (k, v) in ckpt_dict.items():
-#         if k in ckpt:
-#             name = k[7:] # remove `module.`
-#             new_state_dict[name] = v#.load_state_dict(ckpt[k])
-#             # v.load_state_dict(ckpt[k])
-#     best_val = new_state_dict.get('best_val', 0)
-#     epoch_start = new_state_dict.get('epoch_start', 0)
-#     print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
-#         format(ckpt_path, best_val, epoch_start))
-#     return best_val, epoch_start
-
-
-
+  
 def L1_penalty(var):
     return torch.abs(var).sum()
 
@@ -477,11 +447,6 @@ def main():
             args.wd_enc, args.wd_dec,
             enc_params, dec_params, args.optim_dec)
         
-        # if args.resume:
-        #     optim_enc.load_state_dict(enc_opt)
-        #     optim_dec.load_state_dict(dec_opt())
-        #     args.resume = False
-
         for epoch in range(epoch_start, min(args.num_epoch[task_idx], total_epoch - epoch_start)):
             train(segmenter, args.input, train_loader, optim_enc, optim_dec, epoch_current,
                   segm_crit, args.freeze_bn, slim_params, args.lamda, args.bn_threshold, args.print_loss)
