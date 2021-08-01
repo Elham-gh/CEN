@@ -44,13 +44,6 @@ from utils import *
 import utils.helpers as helpers
 from models.model import refinenet, model_init
 
-# Torch libraries
-from torchvision import transforms
-from torch.utils.data import DataLoader, random_split
-# Custom libraries
-from utils.datasets import SegDataset as Dataset
-from utils.transforms import Normalise, Pad, RandomCrop, RandomMirror, ResizeAndScale, \
-                              CropAlignToMask, ResizeAlignToMask, ToTensor, ResizeInputs
 
 def get_arguments():
     """Parse all the arguments provided from the CLI.
@@ -65,6 +58,8 @@ def get_arguments():
                         help='Path to the training set directory.')
     parser.add_argument('--val-dir', type=str, default=VAL_DIR,
                         help='Path to the validation set directory.')
+    parser.add_argument('--bpd-dir', type=str, default=BPD_DIR,
+                        help='Path to the BPD pickl directory.')
     parser.add_argument('--train-list', type=str, default=TRAIN_LIST,
                         help='Path to the training set list.')
     parser.add_argument('--val-list', type=str, default=VAL_LIST,
@@ -120,7 +115,7 @@ def get_arguments():
                         help='Whether print losses during training.')
     parser.add_argument('--save-image', type=int, default=100,
                         help='Number to save images during evaluating, -1 to save all.')
-    parser.add_argument('-i', '--input', default=['rgb', 'depth'], type=str, nargs='+', 
+    parser.add_argument('-i', '--input', default=['rgb', 'bpd'], type=str, nargs='+', 
                         help='input type (image, depth)')
 
     # Optimisers
@@ -154,7 +149,7 @@ def create_segmenter(num_layers, num_classes, num_parallel, bn_threshold, gpu):
     return segmenter
 
 
-def create_loaders(dataset, inputs, train_dir, val_dir, train_list, val_list,
+def create_loaders(dataset, inputs, train_dir, val_dir, bpd_dir, train_list, val_list,
                    shorter_side, crop_size, input_size, low_scale, high_scale,
                    normalise_params, batch_size, num_workers, ignore_label):
     """
@@ -176,8 +171,15 @@ def create_loaders(dataset, inputs, train_dir, val_dir, train_list, val_list,
       train_loader, val loader
 
     """
-    
-    input_names, input_mask_idxs, input_dirs = ['rgb', 'depth'], [0, 1], ['images', 'depths', 'GT']
+    # Torch libraries
+    from torchvision import transforms
+    from torch.utils.data import DataLoader, random_split
+    # Custom libraries
+    from utils.datasets import SegDataset as Dataset
+    from utils.transforms import Normalise, Pad, RandomCrop, RandomMirror, ResizeAndScale, \
+                                 CropAlignToMask, ResizeAlignToMask, ToTensor, ResizeInputs
+
+    input_names, input_mask_idxs = ['rgb', 'depth', 'bpd'], [0, 3, 1, 2]
 
     AlignToMask = CropAlignToMask if dataset == 'nyudv2' else ResizeAlignToMask
     composed_trn = transforms.Compose([
@@ -198,14 +200,16 @@ def create_loaders(dataset, inputs, train_dir, val_dir, train_list, val_list,
     ])
     # Training and validation sets
     trainset = Dataset(dataset=dataset, data_file=train_list, data_dir=train_dir,
+                       bpd_dir=bpd_dir,
                        input_names=input_names, input_mask_idxs=input_mask_idxs,
-                       input_dir=input_dirs, transform_trn=composed_trn, 
-                       transform_val=composed_val,stage='train', ignore_label=ignore_label)
+                       transform_trn=composed_trn, transform_val=composed_val,
+                       stage='train', ignore_label=ignore_label)
 
     validset = Dataset(dataset=dataset, data_file=val_list, data_dir=val_dir,
+                       bpd_dir=bpd_dir,
                        input_names=input_names, input_mask_idxs=input_mask_idxs,
-                       input_dir=input_dirs, transform_trn=None, transform_val=composed_val, 
-                       stage='val', ignore_label=ignore_label)
+                       transform_trn=None, transform_val=composed_val, stage='val',
+                       ignore_label=ignore_label)
     print_log('Created train set {} examples, val set {} examples'.format(len(trainset), len(validset)))
     # Training and validation loaders
     train_loader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=num_workers,
@@ -222,42 +226,10 @@ def create_optimisers(lr_enc, lr_dec, mom_enc, mom_dec, wd_enc, wd_dec, param_en
         optim_dec = torch.optim.SGD(param_dec, lr=lr_dec, momentum=mom_dec, weight_decay=wd_dec)
     elif optim_dec == 'adam':
         optim_dec = torch.optim.Adam(param_dec, lr=lr_dec, weight_decay=wd_dec, eps=1e-3)
-    print(optim_dec.state_dict())
-    print(optim_enc.state_dict())
+
     return optim_enc, optim_dec
 
-
-def load_ckpt(ckpt_path, ckpt_dict):
-    ckpt = torch.load(ckpt_path, map_location='cpu')
-    for (k, v) in {'segmenter': ckpt_dict['segmenter']}.items():
-        if k in ckpt:
-            v.load_state_dict(ckpt[k])
-    best_val = ckpt.get('best_val', 0)
-    epoch_start = ckpt.get('epoch_start', 0)
-    print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
-        format(ckpt_path, best_val, epoch_start))
-    
-    return best_val, epoch_start, ckpt['opt_enc'], ckpt['opt_dec']
-'''
-def load_ckpt(ckpt_path, ckpt_dict):
-    ckpt = torch.load(ckpt_path, map_location='cpu')
-    print(ckpt.keys())
-    from collections import OrderedDict
-    new_state_dict = OrderedDict()
-
-    for (k, v) in ckpt_dict.items():
-        if k in ckpt:
-            name = k[7:] # remove `module.`
-            new_state_dict[name] = v#.load_state_dict(ckpt[k])
-
-            # v.load_state_dict(ckpt[k])
-    best_val = new_state_dict.get('best_val', 0)
-    epoch_start = new_state_dict.get('epoch_start', 0)
-    print_log('Found checkpoint at {} with best_val {:.4f} at epoch {}'.
-        format(ckpt_path, best_val, epoch_start))
-    return best_val, epoch_start
-'''
-
+  
 def L1_penalty(var):
     return torch.abs(var).sum()
 
@@ -337,7 +309,7 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
     segmenter.eval()
     conf_mat = []
     for _ in range(len(input_types) + 1):
-        conf_mat.append(np.zeros((num_classes, num_classes), dtype=int)) # [3, n_c, n_c]
+        conf_mat.append(np.zeros((num_classes, num_classes), dtype=int))
     with torch.no_grad():
         for i, sample in enumerate(val_loader):
             # print('valid input:', sample['rgb'].shape, sample['depth'].shape, sample['mask'].shape)
@@ -348,13 +320,12 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
             gt_idx = gt < num_classes  # Ignore every class index larger than the number of classes
             # Compute outputs
             outputs, alpha_soft = segmenter(inputs)
-            for idx, output in enumerate(outputs): # outputs=3*[1, 40, 107, 141], inputs=2*[1, 3, 427, 561]
-                output = cv2.resize(output[0, :num_classes].data.cpu().numpy().transpose(1, 2, 0), # [40, 107, 141]
-                                    target.size()[1:][::-1], # [40, 427, 561]
-                                    interpolation=cv2.INTER_CUBIC).argmax(axis=2).astype(np.uint8) # [427, 561]
+            for idx, output in enumerate(outputs):
+                output = cv2.resize(output[0, :num_classes].data.cpu().numpy().transpose(1, 2, 0),
+                                    target.size()[1:][::-1],
+                                    interpolation=cv2.INTER_CUBIC).argmax(axis=2).astype(np.uint8)
                 # Compute IoU
                 conf_mat[idx] += confusion_matrix(gt[gt_idx], output[gt_idx], num_classes)
-    
                 if i < save_image or save_image == -1:
                     img = make_validation_img(inputs[0].data.cpu().numpy(),
                                               inputs[1].data.cpu().numpy(),
@@ -363,8 +334,9 @@ def validate(segmenter, input_types, val_loader, epoch, num_classes=-1, save_ima
                     os.makedirs('imgs', exist_ok=True)
                     cv2.imwrite('imgs/validate_%d.png' % i, img[:,:,::-1])
                     print('imwrite at imgs/validate_%d.png' % i)
-    for idx, input_type in enumerate(input_types + ['ens']): # ['rgb', 'depth', 'ens']
-        glob, mean, iou = getScores(conf_mat[idx]) # conf_mat[ens]=zeros
+
+    for idx, input_type in enumerate(input_types + ['ens']):
+        glob, mean, iou = getScores(conf_mat[idx])
         best_iou_note = ''
         if iou > best_iou:
             best_iou = iou
@@ -398,7 +370,6 @@ def main():
         torch.cuda.manual_seed_all(args.random_seed)
     np.random.seed(args.random_seed)
     random.seed(args.random_seed)
-    
     # Generate Segmenter
     torch.cuda.set_device(args.gpu[0])
     segmenter = create_segmenter(args.enc, args.num_classes, len(args.input),
@@ -422,34 +393,37 @@ def main():
     if args.print_network:
         print_log('')
     segmenter = model_init(segmenter, args.enc, len(args.input), imagenet=args.enc_pretrained)
-    
     print_log('Loaded Segmenter {}, ImageNet-Pre-Trained={}, #PARAMS={:3.2f}M'
           .format(args.enc, args.enc_pretrained, compute_params(segmenter) / 1e6))
-    
     # Restore if any
-    best_val, epoch_start, enc_opt, dec_opt = 0, 0, 0, 0
-    if args.resume:
-        if os.path.isfile(args.resume):
-            optim_enc, optim_dec = create_optimisers(
-            args.lr_enc[0], args.lr_dec[0],
-            args.mom_enc, args.mom_dec,
-            args.wd_enc, args.wd_dec,
-            enc_params, dec_params, args.optim_dec)
-            best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter, 'opt_enc': optim_enc, 'opt_dec': optim_dec})
-            # best_val, epoch_start, enc_opt, dec_opt = load_ckpt(args.resume, {'segmenter': segmenter})
+    args.resume = ckpt_dir 
+    best_val, epoch_start = 0, 0
+    enc_opt = dec_opt = None
 
+    if args.resume:
+        saved_model = args.resume + '/model.pth.tar'
+        if os.path.isfile(saved_model):
+            segmenter.load_state_dict(torch.load(saved_model, map_location='cpu')['segmenter'])
+            print('Saved Segmenter Is Loaded')
+            
+            get_ckpt = torch.load(saved_model, map_location='cpu')
+            best_val = torch.load(args.resume + '/best' + '.pth.tar')['best_val']#.get('best_val', 0)
+            epoch_start = torch.load(args.resume + '/epoch_start' + '.pth.tar')['epoch_start']#.get('best_val', 0)
+            enc_opt = torch.load(args.resume + '/opt' + '.pth.tar')['opt_enc']
+            dec_opt = torch.load(args.resume + '/opt' + '.pth.tar')['opt_dec']
+            print('Found checkpoint at {}'.format(saved_model))
         else:
-            print_log("=> no checkpoint found at '{}'".format(args.resume))
+            print("=> no checkpoint found at '{}'".format(args.resume))
             return
+
     epoch_current = epoch_start
-    
+
     # Criterion
     segm_crit = nn.NLLLoss(ignore_index=args.ignore_label).cuda()
-    
     # Saver
     saver = Saver(args=vars(args), ckpt_dir=ckpt_dir, enc_opt=enc_opt, dec_opt=dec_opt, best_val=best_val,
                   condition=lambda x, y: x > y)  # keep checkpoint with the best validation score
-
+    
     for task_idx in range(args.num_stages):
         total_epoch = sum([args.num_epoch[idx] for idx in range(task_idx + 1)])
         if epoch_start >= total_epoch:
@@ -458,7 +432,7 @@ def main():
         torch.cuda.empty_cache()
         # Create dataloaders
         train_loader, val_loader = create_loaders(
-            DATASET, args.input, args.train_dir, args.val_dir, args.train_list, args.val_list,
+            DATASET, args.input, args.train_dir, args.val_dir, args.bpd_dir, args.train_list, args.val_list,
             args.shorter_side, args.crop_size, args.input_size, args.low_scale, args.high_scale,
             args.normalise_params, args.batch_size, args.num_workers, args.ignore_label)
         if args.evaluate:
@@ -473,20 +447,17 @@ def main():
             args.wd_enc, args.wd_dec,
             enc_params, dec_params, args.optim_dec)
         
-        if args.resume:
-            optim_enc.load_state_dict(enc_opt)
-            optim_dec.load_state_dict(dec_opt())
-            args.resume = False
-
-        for epoch in range(min(args.num_epoch[task_idx], total_epoch - epoch_start)):
+        
+        for epoch in range(epoch_current, min(args.num_epoch[task_idx], total_epoch - epoch_start)):
             train(segmenter, args.input, train_loader, optim_enc, optim_dec, epoch_current,
                   segm_crit, args.freeze_bn, slim_params, args.lamda, args.bn_threshold, args.print_loss)
             if (epoch + 1) % (args.val_every) == 0:
                 miou = validate(segmenter, args.input, val_loader, epoch_current, args.num_classes)
-                saver.save(miou, {'segmenter' : segmenter.state_dict(), 'opt_enc': optim_enc.state_dict(), 
-                                  'opt_dec':optim_dec.state_dict, 'epoch_start' : epoch_current})
+                saver.save(miou, {'segmenter' : segmenter.state_dict()}, 
+                                      {'opt_enc': optim_enc.state_dict(), 'opt_dec':optim_dec.state_dict}, 
+                                      {'epoch_start' : epoch_current})
             epoch_current += 1
-
+            
         print_log('Stage {} finished, time spent {:.3f}min\n'.format(task_idx, (time.time() - start) / 60.))
 
     print_log('All stages are now finished. Best Val is {:.3f}'.format(saver.best_val))
@@ -495,4 +466,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
