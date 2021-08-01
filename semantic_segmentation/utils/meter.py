@@ -92,7 +92,7 @@ class Saver():
             self.best_val = new_val
             best['best_val'] = new_val
         else:
-            print(' Best value still is {:.4f}'.format(new_val), flush=True)
+            print(' Best value still is {:.4f}'.format(self.best_val), flush=True)
             best['best_val'] = new_val
         torch.save(best, '{}/best.pth.tar'.format(self.ckpt_dir))
 
