@@ -424,7 +424,7 @@ def main():
     saver = Saver(args=vars(args), ckpt_dir=ckpt_dir, enc_opt=enc_opt, dec_opt=dec_opt, best_val=best_val,
                   condition=lambda x, y: x > y)  # keep checkpoint with the best validation score
     
-    for task_idx in range(1, args.num_stages):
+    for task_idx in range(args.num_stages):
         total_epoch = sum([args.num_epoch[idx] for idx in range(task_idx + 1)])
         if epoch_start >= total_epoch:
             continue
@@ -447,7 +447,8 @@ def main():
             args.wd_enc, args.wd_dec,
             enc_params, dec_params, args.optim_dec)
         
-        for epoch in range(epoch_start, min(args.num_epoch[task_idx], total_epoch - epoch_start)):
+        
+        for epoch in range(epoch_current, min(args.num_epoch[task_idx], total_epoch - epoch_start)):
             train(segmenter, args.input, train_loader, optim_enc, optim_dec, epoch_current,
                   segm_crit, args.freeze_bn, slim_params, args.lamda, args.bn_threshold, args.print_loss)
             if (epoch + 1) % (args.val_every) == 0:
