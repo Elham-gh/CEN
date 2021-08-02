@@ -165,27 +165,28 @@ class Bottleneck(nn.Module):
                 self.bn2_list.append(module)
 
     def forward(self, x):
-        residual = x
-        out = x
+        residual = x #len(x)=3, x[0]= [4, 64, 125, 125]
+        out = x #3 torch.Size([4, 64, 125, 125])
 
         out = self.conv1(out)
         out = self.bn1(out)
-        out = self.relu(out)
+        out = self.relu(out) #3 torch.Size([4, 64, 125, 125])
 
         out = self.conv2(out)
-        out = self.bn2(out)
+        out = self.bn2(out) # 3 torch.Size([4, 64, 125, 125])
+
         if len(x) > 1:
             out = self.exchange(out, self.bn2_list, self.bn_threshold)
-        out = self.relu(out)
+        out = self.relu(out) # 3 torch.Size([4, 64, 125, 125])
 
         out = self.conv3(out)
-        out = self.bn3(out)
+        out = self.bn3(out) # 3 torch.Size([4, 256, 125, 125])
 
         if self.downsample is not None:
             residual = self.downsample(x)
 
         out = [out[l] + residual[l] for l in range(self.num_parallel)]
-        out = self.relu(out)
+        out = self.relu(out) #3 torch.Size([4, 256, 125, 125]
 
         return out
 
@@ -259,15 +260,16 @@ class RefineNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        x = self.maxpool(x)
+        x = self.maxpool(x) # [4, 64, 125, 125]
 
-        l1 = self.layer1(x)
-        l2 = self.layer2(l1)
-        l3 = self.layer3(l2)
-        l4 = self.layer4(l3)
+        l1 = self.layer1(x) #3 torch.Size([2, 256, 125, 125])
+        l2 = self.layer2(l1) #3 torch.Size([2, 512, 63, 63])
+        l3 = self.layer3(l2) # 3 torch.Size([2, 1024, 32, 32])
+        l4 = self.layer4(l3) #3 torch.Size([2, 2048, 16, 16])
 
         l4 = self.dropout(l4)
         l3 = self.dropout(l3)
@@ -318,7 +320,8 @@ class RefineNet(nn.Module):
         # for l in range(self.num_parallel):
         #     print(out[l].shape, l)
             # ens += alpha_soft[:, l].unsqueeze(1) * out[l].detach()
-        out.append(ens)
+        out.append(ens) #4 torch.Size([2, 40, 125, 125])
+
         return out, alpha_soft
 
 
