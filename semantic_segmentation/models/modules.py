@@ -12,7 +12,7 @@ class Exchange(nn.Module):
         x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
         x1[:, bn1 < bn_threshold] = .5 * (x[1][:, bn1 < bn_threshold] + x[2][:, bn1 < bn_threshold])
         x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
-        x2[:, bn2 < bn_threshold] = .5 * (x[0][:, bn2 < bn_threshold] + x[2][:, bn1 < bn_threshold])
+        x2[:, bn2 < bn_threshold] = .5 * (x[0][:, bn2 < bn_threshold] + x[2][:, bn2 < bn_threshold])
         x3[:, bn3 >= bn_threshold] = x[2][:, bn3 >= bn_threshold]
         x3[:, bn3 < bn_threshold] = .5 * (x[0][:, bn3 < bn_threshold] + x[1][:, bn3 < bn_threshold])
         return [x1, x2, x3]
