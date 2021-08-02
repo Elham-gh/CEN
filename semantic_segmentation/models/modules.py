@@ -8,13 +8,13 @@ class Exchange(nn.Module):
 
     def forward(self, x, bn, bn_threshold):
         bn1, bn2, bn3 = bn[0].weight.abs(), bn[1].weight.abs(), bn[2].weight.abs()
-        x1, x2, x3 = torch.zeros_like(x[0]), torch.zeros_like(x[1]), torch.zeros_like(x[2])
+        x1, x2, x3 = torch.zeros_like(x[0]), torch.zeros_like(x[1]), torch.zeros_like(x[2]) #[2, 64, 125, 125]
         x1[:, bn1 >= bn_threshold] = x[0][:, bn1 >= bn_threshold]
         x1[:, bn1 < bn_threshold] = .5 * (x[1][:, bn1 < bn_threshold] + x[2][:, bn1 < bn_threshold])
         x2[:, bn2 >= bn_threshold] = x[1][:, bn2 >= bn_threshold]
         x2[:, bn2 < bn_threshold] = .5 * (x[0][:, bn2 < bn_threshold] + x[2][:, bn1 < bn_threshold])
         x3[:, bn3 >= bn_threshold] = x[2][:, bn3 >= bn_threshold]
-        x3[:, bn3 < bn_threshold] = .5 * (x[0][:, bn3 < bn_threshold] + x[1][:, bn3 < bn_threshold])        
+        x3[:, bn3 < bn_threshold] = .5 * (x[0][:, bn3 < bn_threshold] + x[1][:, bn3 < bn_threshold])
         return [x1, x2, x3]
 
 
