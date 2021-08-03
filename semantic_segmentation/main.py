@@ -261,6 +261,9 @@ def train(segmenter, input_types, train_loader, optim_enc, optim_dec, epoch,
         # print('train input:', sample['rgb'].shape, sample['depth'].shape, sample['mask'].shape)
         start = time.time()
         inputs = [sample[key].cuda().float() for key in input_types]
+        if torch.isnan(inputs[0].sum) or torch.isinf(inputs[0].sum):
+          print(sample['name'])
+          continue
         target = sample['mask'].cuda().long()
         # Compute outputs
         outputs, _ = segmenter(inputs)
@@ -276,6 +279,7 @@ def train(segmenter, input_types, train_loader, optim_enc, optim_dec, epoch,
         optim_enc.zero_grad()
         optim_dec.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(segmenter.parameters(), 0.5)
         if print_loss:
             print('step: %-3d: loss=%.2f' % (i, loss), flush=True)
         optim_enc.step()
