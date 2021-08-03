@@ -396,8 +396,8 @@ def main():
     print_log('Loaded Segmenter {}, ImageNet-Pre-Trained={}, #PARAMS={:3.2f}M'
           .format(args.enc, args.enc_pretrained, compute_params(segmenter) / 1e6))
     # Restore if any
-    args.resume = ckpt_dir 
-    best_val, epoch_start = 0, 0
+    args.resume = '' #ckpt_dir 
+    best_val, epoch_start, epoch_current = 0, 0, 0
     enc_opt = dec_opt = None
 
     if args.resume:
@@ -408,7 +408,7 @@ def main():
             
             get_ckpt = torch.load(saved_model, map_location='cpu')
             best_val = torch.load(args.resume + '/best' + '.pth.tar')['best_val']#.get('best_val', 0)
-            epoch_start = torch.load(args.resume + '/epoch_start' + '.pth.tar')['epoch_start']#.get('best_val', 0)
+            epoch_current = torch.load(args.resume + '/epoch_start' + '.pth.tar')['epoch_start']#.get('best_val', 0)
             enc_opt = torch.load(args.resume + '/opt' + '.pth.tar')['opt_enc']
             dec_opt = torch.load(args.resume + '/opt' + '.pth.tar')['opt_dec']
             print('Found checkpoint at {}'.format(saved_model))
@@ -416,7 +416,6 @@ def main():
             print("=> no checkpoint found at '{}'".format(args.resume))
             return
 
-    epoch_current = epoch_start
 
     # Criterion
     segm_crit = nn.NLLLoss(ignore_index=args.ignore_label).cuda()
@@ -448,7 +447,7 @@ def main():
             enc_params, dec_params, args.optim_dec)
         
         
-        for epoch in range(epoch_current, min(args.num_epoch[task_idx], total_epoch - epoch_start)):
+        for epoch in range(min(args.num_epoch[task_idx], total_epoch - epoch_start)):
             train(segmenter, args.input, train_loader, optim_enc, optim_dec, epoch_current,
                   segm_crit, args.freeze_bn, slim_params, args.lamda, args.bn_threshold, args.print_loss)
             if (epoch + 1) % (args.val_every) == 0:
