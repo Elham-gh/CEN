@@ -115,7 +115,7 @@ def get_arguments():
                         help='Whether print losses during training.')
     parser.add_argument('--save-image', type=int, default=100,
                         help='Number to save images during evaluating, -1 to save all.')
-    parser.add_argument('-i', '--input', default=['rgb', 'bpd'], type=str, nargs='+', 
+    parser.add_argument('-i', '--input', default=['rgb', 'bpd', 'depth'], type=str, nargs='+', 
                         help='input type (image, depth)')
 
     # Optimisers
@@ -360,7 +360,7 @@ def main():
     args = get_arguments()
     args.num_stages = len(args.lr_enc)
 
-    ckpt_dir = os.path.join('/content/drive/MyDrive/SuperBPD/CEN/ckpt', args.ckpt)
+    ckpt_dir = '/content/drive/MyDrive/SuperBPD/CEN/ckpt/3modal' #os.path.join(, args.ckpt)
     os.makedirs(ckpt_dir, exist_ok=True)
     os.system('cp -r *py models utils data %s' % ckpt_dir)
     helpers.logger = open(os.path.join(ckpt_dir, 'log.txt'), 'w+')
@@ -399,7 +399,7 @@ def main():
     print_log('Loaded Segmenter {}, ImageNet-Pre-Trained={}, #PARAMS={:3.2f}M'
           .format(args.enc, args.enc_pretrained, compute_params(segmenter) / 1e6))
     # Restore if any
-    args.resume = ckpt_dir 
+    args.resume = '' # ckpt_dir 
     best_val, epoch_start = 0, 0
     enc_opt = dec_opt = None
 
@@ -460,9 +460,10 @@ def main():
                                       {'opt_enc': optim_enc.state_dict(), 'opt_dec':optim_dec.state_dict}, 
                                       {'epoch_start' : epoch_current})
                 
-                with open(CKPT_PATH + 'mious.txt', 'w') as f:
+                with open(ckpt_dir + '/mious.txt', 'w') as f:
                     for i in mious:
                         f.write(str(i) + '\n')
+            
             epoch_current += 1
             
         print_log('Stage {} finished, time spent {:.3f}min\n'.format(task_idx, (time.time() - start) / 60.))
