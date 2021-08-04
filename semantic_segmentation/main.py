@@ -426,6 +426,7 @@ def main():
     saver = Saver(args=vars(args), ckpt_dir=ckpt_dir, enc_opt=enc_opt, dec_opt=dec_opt, best_val=best_val,
                   condition=lambda x, y: x > y)  # keep checkpoint with the best validation score
     
+    mious = []
     for task_idx in range(args.num_stages):
         total_epoch = sum([args.num_epoch[idx] for idx in range(task_idx + 1)])
         if epoch_start >= total_epoch:
@@ -458,6 +459,7 @@ def main():
                 saver.save(miou, {'segmenter' : segmenter.state_dict()}, 
                                       {'opt_enc': optim_enc.state_dict(), 'opt_dec':optim_dec.state_dict}, 
                                       {'epoch_start' : epoch_current})
+                mious.append(miou)
                 with open(ckpt_dir + '/mious.txt', 'w') as f:
                     for i in mious:
                         f.write(str(i) + '\n')
