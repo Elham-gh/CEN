@@ -261,7 +261,7 @@ def train(segmenter, input_types, train_loader, optim_enc, optim_dec, epoch,
         # print('train input:', sample['rgb'].shape, sample['depth'].shape, sample['mask'].shape)
         start = time.time()
         inputs = [sample[key].cuda().float() for key in input_types]
-        if torch.isnan(inputs[0].sum) or torch.isinf(inputs[0].sum):
+        if torch.isnan(inputs[0].sum()) or torch.isinf(inputs[0].sum()):
           print(sample['name'])
           continue
         target = sample['mask'].cuda().long()
@@ -459,6 +459,10 @@ def main():
                 saver.save(miou, {'segmenter' : segmenter.state_dict()}, 
                                       {'opt_enc': optim_enc.state_dict(), 'opt_dec':optim_dec.state_dict}, 
                                       {'epoch_start' : epoch_current})
+                with open(CKPT_PATH + 'mious.txt', 'w') as f:
+                    for i in mious:
+                        f.write(str(i) + '\n')
+            
             epoch_current += 1
             
         print_log('Stage {} finished, time spent {:.3f}min\n'.format(task_idx, (time.time() - start) / 60.))
