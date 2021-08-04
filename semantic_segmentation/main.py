@@ -459,7 +459,7 @@ def main():
                 saver.save(miou, {'segmenter' : segmenter.state_dict()}, 
                                       {'opt_enc': optim_enc.state_dict(), 'opt_dec':optim_dec.state_dict}, 
                                       {'epoch_start' : epoch_current})
-                with open(CKPT_PATH + 'mious.txt', 'w') as f:
+                with open(ckpt_dir + 'mious.txt', 'w') as f:
                     for i in mious:
                         f.write(str(i) + '\n')
             
