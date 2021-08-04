@@ -18,7 +18,7 @@ NORMALISE_PARAMS = [1./255,  # Image SCALE
                     np.array([0.229, 0.224, 0.225]).reshape((1, 1, 3)),  # Image STD
                     1./5000]#,   # Depth SCALE
                     # 1./292500] #BPD SCALE  
-BATCH_SIZE = 4
+BATCH_SIZE = 3
 NUM_WORKERS = 16
 NUM_CLASSES = 40
 LOW_SCALE = 0.5
@@ -26,19 +26,19 @@ HIGH_SCALE = 2.0
 IGNORE_LABEL = 255
 
 # ENCODER PARAMETERS
-ENC = '101'  # ResNet101
+ENC = '152'  # ResNet101
 ENC_PRETRAINED = True  # pre-trained on ImageNet or randomly initialised
 
 # GENERAL
 FREEZE_BN = True
-NUM_SEGM_EPOCHS = [100] * 3  # [150] * 3 if using ResNet152 as backbone
+NUM_SEGM_EPOCHS = [100] * 5  # [150] * 3 if using ResNet152 as backbone
 PRINT_EVERY = 10
 RANDOM_SEED = 42
 VAL_EVERY = 5  # how often to record validation scores
 
 # OPTIMISERS' PARAMETERS
-LR_ENC = [5e-4, 2.5e-4, 1e-4]  # TO FREEZE, PUT 0
-LR_DEC = [3e-3, 1.5e-3, 7e-4]
+LR_ENC = [5e-4, 2.5e-4, 1e-4, 5e-5, 2.5e-5]  # TO FREEZE, PUT 0
+LR_DEC = [3e-3, 1.5e-3, 7e-4, 3.5e-5, 1.5e-5]
 MOM_ENC = 0.9  # TO FREEZE, PUT 0
 MOM_DEC = 0.9
 WD_ENC = 1e-5  # TO FREEZE, PUT 0
